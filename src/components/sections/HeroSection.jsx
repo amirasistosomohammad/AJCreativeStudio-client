@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 // Completely custom, Swiper-free hero slider
 // We control everything with simple React state + CSS
-const HeroSection = ({ config, section }) => {
+const HeroSection = ({ config }) => {
   const slides = Array.isArray(config?.slides) ? config.slides : [];
   const autoplay = config?.autoplay !== false;
   const autoplayDelay = config?.autoplayDelay ?? 5000;
@@ -11,10 +11,6 @@ const HeroSection = ({ config, section }) => {
   const showPagination = config?.showPagination !== false;
 
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  if (!slides || slides.length === 0) {
-    return null;
-  }
 
   // Simple autoplay using setInterval
   useEffect(() => {
@@ -26,6 +22,14 @@ const HeroSection = ({ config, section }) => {
 
     return () => clearInterval(interval);
   }, [autoplay, autoplayDelay, slides.length]);
+
+  // Render nothing if there are no slides (after hooks so hook order is stable across renders)
+  if (slides.length === 0) {
+    return null;
+  }
+
+  // Defensive: if slides shrink, keep rendering using a safe index without triggering extra renders.
+  const safeIndex = ((currentIndex % slides.length) + slides.length) % slides.length;
 
   const goToSlide = (index) => {
     if (index < 0) {
@@ -302,7 +306,7 @@ const HeroSection = ({ config, section }) => {
           >
           <div className="hero-slides-wrapper">
             {slides.map((slide, index) => {
-              const isActive = index === currentIndex;
+              const isActive = index === safeIndex;
               const title = slide.title || '';
               const subtitle = slide.subtitle || '';
               const buttonText = slide.buttonText || '';
@@ -401,7 +405,7 @@ const HeroSection = ({ config, section }) => {
                 <button
                   className="hero-nav-button prev"
                   type="button"
-                  onClick={() => goToSlide(currentIndex - 1)}
+                  onClick={() => goToSlide(safeIndex - 1)}
                 >
                   <svg
                     className="hero-nav-icon"
@@ -423,7 +427,7 @@ const HeroSection = ({ config, section }) => {
                 <button
                   className="hero-nav-button next"
                   type="button"
-                  onClick={() => goToSlide(currentIndex + 1)}
+                  onClick={() => goToSlide(safeIndex + 1)}
                 >
                   <svg
                     className="hero-nav-icon"
@@ -453,7 +457,7 @@ const HeroSection = ({ config, section }) => {
                   key={`hero-dot-${index}`}
                   type="button"
                   className={`hero-dot ${
-                    index === currentIndex ? 'hero-dot-active' : ''
+                    index === safeIndex ? 'hero-dot-active' : ''
                   }`}
                   onClick={() => goToSlide(index)}
                 />

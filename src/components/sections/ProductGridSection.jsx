@@ -37,6 +37,7 @@ const DynamicProductSection = ({ section }) => {
   const sliderRef = useRef(null);
 
   useEffect(() => {
+    if (!section?.is_active) return;
     fetchProducts();
   }, [section]);
 
@@ -85,6 +86,43 @@ const DynamicProductSection = ({ section }) => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [products]);
+
+  // Detect screen size for responsive slider
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setSlidesToShow(2); // 2 products on mobile/tablet
+      } else {
+        setSlidesToShow(4); // 4 products on desktop
+      }
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Reset slider position when products change or slidesToShow changes
+  useEffect(() => {
+    if (displayStyle === 'slider') {
+      setCurrentSlide(0);
+    }
+  }, [products, displayStyle, slidesToShow]);
+
+  // Auto-advance slider - only if we have more products than visible
+  useEffect(() => {
+    if (displayStyle === 'slider' && products.length > slidesToShow) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => {
+          if (prev >= products.length - slidesToShow) {
+            return 0; // Loop back to start
+          }
+          return prev + 1;
+        });
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [displayStyle, products.length, slidesToShow]);
 
   const fetchProducts = async () => {
     try {
@@ -145,53 +183,11 @@ const DynamicProductSection = ({ section }) => {
     }
   };
 
-  if (!section.is_active) {
-    return null;
-  }
-
-  // Don't render section if there are no products in the collection
-  if (!loading && products.length === 0) {
-    return null;
-  }
+  // Note: early-return conditions must be AFTER hooks to keep hook order stable across renders.
+  if (!section?.is_active) return null;
+  if (!loading && products.length === 0) return null;
 
   const backgroundColor = section.name === 'new_arrivals' ? '#F3F3F3' : '#FFFFFF';
-
-  // Detect screen size for responsive slider
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 768) {
-        setSlidesToShow(2); // 2 products on mobile/tablet
-      } else {
-        setSlidesToShow(4); // 4 products on desktop
-      }
-    };
-
-    handleResize(); // Set initial value
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Reset slider position when products change or slidesToShow changes
-  useEffect(() => {
-    if (displayStyle === 'slider') {
-      setCurrentSlide(0);
-    }
-  }, [products, displayStyle, slidesToShow]);
-
-  // Auto-advance slider - only if we have more products than visible
-  useEffect(() => {
-    if (displayStyle === 'slider' && products.length > slidesToShow) {
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => {
-          if (prev >= products.length - slidesToShow) {
-            return 0; // Loop back to start
-          }
-          return prev + 1;
-        });
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [displayStyle, products.length, slidesToShow]);
 
   // Render product card component
   const renderProductCard = (product, index, isSlider = false) => {

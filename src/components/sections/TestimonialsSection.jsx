@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const TestimonialsSection = ({ config, section }) => {
   const sectionRef = useRef(null);
 
-  const allTestimonials = config.testimonials || [];
+  const allTestimonials = Array.isArray(config?.testimonials) ? config.testimonials : [];
   const testimonials = allTestimonials
     .filter((testimonial) => testimonial?.is_active !== false)
     .sort((a, b) => (a?.order || 0) - (b?.order || 0));
@@ -19,10 +19,6 @@ const TestimonialsSection = ({ config, section }) => {
     }
     return 4;
   });
-
-  if (testimonials.length === 0) {
-    return null;
-  }
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -68,6 +64,11 @@ const TestimonialsSection = ({ config, section }) => {
     }, 5000);
     return () => clearInterval(interval);
   }, [displayStyle, autoRotate, testimonials.length, slidesToShow]);
+
+  // Render nothing if there are no testimonials (after hooks so hook order is stable across renders)
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   const renderTestimonialCard = (testimonial, index, isSlider = false) => {
     const isCompact = slidesToShow === 1;
