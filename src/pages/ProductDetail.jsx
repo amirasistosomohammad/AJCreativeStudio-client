@@ -541,7 +541,7 @@ const ProductDetail = () => {
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ color: '#FFC107', fontSize: '1rem' }}>★</span>
-                <span>Google Sheets Compatible | NOT compatible with MS Excel</span>
+                <span>Microsoft Excel & Google Sheets compatible (upload the Excel file to Google Drive to use it in Sheets)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span style={{ color: '#FFC107', fontSize: '1rem' }}>★</span>
@@ -595,7 +595,7 @@ const ProductDetail = () => {
             
             {/* Note */}
             <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#FFF9E6', borderRadius: '4px', border: '1px solid #FFE082' }}>
-              <strong>NOTE: THIS DOCUMENT IS FOR GOOGLE SHEETS ONLY</strong> - this is NOT fully compatible with MS Excel.
+              <strong>NOTE:</strong> This template works in Microsoft Excel and Google Sheets. To use it in Google Sheets, upload the Excel file to Google Drive and open it with Google Sheets.
             </div>
             
             {/* Disclaimer */}
