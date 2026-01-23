@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { showAlert } from '../../services/notificationService';
 import RichTextEditor from '../../components/RichTextEditor';
+import { buildAssetUrl as buildApiAssetUrl } from '../../utils/productImageUtils';
 
 const ProductFormModal = ({ product, onClose, onSave, token }) => {
   const { user } = useAuth();
@@ -44,16 +45,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
   const fileInputRef = useRef(null);
 
   const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-  const fileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
-  const buildAssetUrl = (rawPath) => {
-    if (!rawPath) return null;
-    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) return rawPath;
-    const cleaned = rawPath.replace(/^\/+/, '');
-    if (cleaned.startsWith('storage/')) return `${fileBaseUrl}/${cleaned}`;
-    if (cleaned.startsWith('public/')) return `${fileBaseUrl}/storage/${cleaned.replace(/^public\//, '')}`;
-    return `${fileBaseUrl}/storage/${cleaned}`;
-  };
+  const buildAssetUrl = (rawPath) => buildApiAssetUrl(rawPath);
 
   const normalizeFeatureImages = (raw) => {
     if (!raw) return [];

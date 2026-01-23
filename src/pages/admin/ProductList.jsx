@@ -9,6 +9,7 @@ import { showAlert } from '../../services/notificationService';
 import MarkdownRenderer from '../../components/MarkdownRenderer';
 import ImageLightbox from '../../components/ImageLightbox';
 import LoadingSpinner from '../../components/admin/LoadingSpinner';
+import { buildAssetUrl as buildApiAssetUrl } from '../../utils/productImageUtils';
 
 const ProductList = () => {
   const { token } = useAuth();
@@ -41,27 +42,13 @@ const ProductList = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-  // Files (storage) are served from the app root, not /api. Normalize so image URLs work even when VITE_LARAVEL_API ends with /api
-  const fileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
+  // Use the same image URL builder as the storefront (uses /api/files/... so it works on App Platform).
   const buildAssetUrl = (rawPath) => {
-    if (!rawPath) return null;
-    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-      // Add cache buster to external URLs too
-      const separator = rawPath.includes('?') ? '&' : '?';
-      return `${rawPath}${separator}_t=${imageCacheBuster}`;
-    }
-    const cleaned = rawPath.replace(/^\/+/, '');
-    let url;
-    if (cleaned.startsWith('storage/')) {
-      url = `${fileBaseUrl}/${cleaned}`;
-    } else if (cleaned.startsWith('public/')) {
-      url = `${fileBaseUrl}/storage/${cleaned.replace(/^public\//, '')}`;
-    } else {
-      url = `${fileBaseUrl}/storage/${cleaned}`;
-    }
-    // Add cache buster to force browser to reload image after updates
-    return `${url}?_t=${imageCacheBuster}`;
+    const url = buildApiAssetUrl(rawPath);
+    if (!url) return null;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}_t=${imageCacheBuster}`;
   };
 
   const normalizeFeatureImages = (product) => {
@@ -278,23 +265,12 @@ const ProductList = () => {
         }
         
         // Initialize image loading states immediately when products are fetched
-        // Use a temporary buildAssetUrl that uses the new cache buster
+        // Use the same URL builder as the storefront so it works in production.
         const buildAssetUrlWithCache = (rawPath) => {
-          if (!rawPath) return null;
-          if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-            const separator = rawPath.includes('?') ? '&' : '?';
-            return `${rawPath}${separator}_t=${newCacheBuster}`;
-          }
-          const cleaned = rawPath.replace(/^\/+/, '');
-          let url;
-          if (cleaned.startsWith('storage/')) {
-            url = `${fileBaseUrl}/${cleaned}`;
-          } else if (cleaned.startsWith('public/')) {
-            url = `${fileBaseUrl}/storage/${cleaned.replace(/^public\//, '')}`;
-          } else {
-            url = `${fileBaseUrl}/storage/${cleaned}`;
-          }
-          return `${url}?_t=${newCacheBuster}`;
+          const url = buildApiAssetUrl(rawPath);
+          if (!url) return null;
+          const separator = url.includes('?') ? '&' : '?';
+          return `${url}${separator}_t=${newCacheBuster}`;
         };
         
         const initialLoadingMap = {};
