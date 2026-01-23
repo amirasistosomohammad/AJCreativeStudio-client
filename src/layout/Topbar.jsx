@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import Logo from "../assets/images/logo.jpg";
+import { useBranding } from "../contexts/BrandingContext";
 
 const Topbar = ({ onToggleSidebar }) => {
   const { user, admin, logout, loading, isAuthenticated } = useAuth();
+  const { logoSrc, logoText, isLoading: brandingLoading } = useBranding();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -51,28 +52,60 @@ const Topbar = ({ onToggleSidebar }) => {
       <div className="navbar-brand ps-3 ps-sm-4 d-flex align-items-center">
         <div className="d-flex align-items-center" style={{ gap: "12px" }}>
           {/* Larger Responsive Logo */}
-          <img
-            src={Logo}
-            alt="AJ Creative Studio Logo"
-            className="d-none d-sm-block"
-            style={{
-              width: "45px",
-              height: "45px",
-              objectFit: "contain",
-            }}
-          />
+          {brandingLoading || !logoSrc ? (
+            <div
+              aria-hidden="true"
+              className="d-none d-sm-block"
+              style={{
+                width: 45,
+                height: 45,
+                borderRadius: 12,
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0.18) 25%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.18) 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 1.2s ease-in-out infinite",
+              }}
+            />
+          ) : (
+            <img
+              src={logoSrc}
+              alt={`${logoText} Logo`}
+              className="d-none d-sm-block"
+              style={{
+                width: "45px",
+                height: "45px",
+                objectFit: "contain",
+              }}
+            />
+          )}
 
           {/* Mobile Logo - Smaller */}
-          <img
-            src={Logo}
-            alt="AJ Creative Studio Logo"
-            className="d-block d-sm-none"
-            style={{
-              width: "35px",
-              height: "35px",
-              objectFit: "contain",
-            }}
-          />
+          {brandingLoading || !logoSrc ? (
+            <div
+              aria-hidden="true"
+              className="d-block d-sm-none"
+              style={{
+                width: 35,
+                height: 35,
+                borderRadius: 10,
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0.18) 25%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.18) 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 1.2s ease-in-out infinite",
+              }}
+            />
+          ) : (
+            <img
+              src={logoSrc}
+              alt={`${logoText} Logo`}
+              className="d-block d-sm-none"
+              style={{
+                width: "35px",
+                height: "35px",
+                objectFit: "contain",
+              }}
+            />
+          )}
 
           {/* Text Brand Name - Responsive */}
           <div className="d-flex flex-column justify-content-center">
@@ -84,7 +117,7 @@ const Topbar = ({ onToggleSidebar }) => {
                 lineHeight: "1.1",
               }}
             >
-              AJ Creative Studio
+              {brandingLoading ? "" : logoText}
             </span>
 
             {/* Mobile - All screens (showing full name) */}
@@ -95,7 +128,7 @@ const Topbar = ({ onToggleSidebar }) => {
                 lineHeight: "1.2",
               }}
             >
-              AJ Creative Studio
+              {brandingLoading ? "" : logoText}
             </span>
 
             {/* Subtitle - Desktop & Tablet only */}
@@ -122,6 +155,12 @@ const Topbar = ({ onToggleSidebar }) => {
           marginLeft: window.innerWidth >= 992 ? "1rem" : "0",
         }}
       >
+        <style>{`
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
         <i className="fas fa-bars"></i>
       </button>
 

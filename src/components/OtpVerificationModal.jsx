@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import logoImage from '../assets/images/logo.jpg';
 import { showAlert } from '../services/notificationService';
+import { useBranding } from '../contexts/BrandingContext';
 
 const OtpVerificationModal = ({
   email,
@@ -16,6 +16,7 @@ const OtpVerificationModal = ({
   hideIntro = false,
   animate = true,
 }) => {
+  const { logoSrc, logoText } = useBranding();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -199,8 +200,8 @@ const OtpVerificationModal = ({
           >
             <div className="d-flex align-items-center gap-2">
               <img
-                src={logoImage}
-                alt="AJ Creative Studio logo"
+                src={logoSrc}
+                alt={`${logoText} logo`}
                 style={{
                   height: '40px',
                   width: 'auto',
@@ -209,7 +210,7 @@ const OtpVerificationModal = ({
                 }}
               />
               <span style={{ color: '#000', fontWeight: 600, fontSize: '1.125rem' }}>
-                AJ Creative Studio
+                {logoText}
               </span>
             </div>
             <button

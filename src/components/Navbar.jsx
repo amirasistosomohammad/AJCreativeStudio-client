@@ -6,10 +6,12 @@ import logoImage from '../assets/images/logo.jpg';
 import './Navbar.css';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useBranding } from '../contexts/BrandingContext';
 import PublicLogin from '../pages/public/auth/Login';
 import { showAlert } from '../services/notificationService';
 
 const Navbar = () => {
+  const { logoSrc, logoText, isLoading: brandingLoading } = useBranding();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navHeight, setNavHeight] = useState(0);
   const baseNavHeightRef = useRef(0); // Store base height (without mobile menu)
@@ -262,6 +264,12 @@ const Navbar = () => {
           overflowY: mobileOpen || searchOpen ? 'visible' : 'hidden',
         }}
       >
+        <style>{`
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
         <div
           style={{
             maxWidth: '1100px',
@@ -278,20 +286,49 @@ const Navbar = () => {
             style={{ textDecoration: 'none' }}
           >
             <div className="d-flex align-items-center gap-2 navbar-logo-container">
-              <img
-                src={logoImage}
-                alt="AJ Creative Studio logo"
-                className="navbar-logo"
-                style={{
-                  height: '40px',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  display: 'block',
-                }}
-              />
-              <span className="navbar-brand-text" style={{ color: '#000', fontWeight: 600, fontSize: '1.125rem' }}>
-                AJ Creative Studio
-              </span>
+              {brandingLoading || !logoSrc ? (
+                <>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      height: 40,
+                      width: 40,
+                      borderRadius: 10,
+                      background: "linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%)",
+                      backgroundSize: "200% 100%",
+                      animation: "shimmer 1.2s ease-in-out infinite",
+                    }}
+                  />
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      height: 14,
+                      width: 140,
+                      borderRadius: 999,
+                      background: "linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%)",
+                      backgroundSize: "200% 100%",
+                      animation: "shimmer 1.2s ease-in-out infinite",
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <img
+                    src={logoSrc}
+                    alt={`${logoText || 'AJ Creative Studio'} logo`}
+                    className="navbar-logo"
+                    style={{
+                      height: '40px',
+                      width: 'auto',
+                      objectFit: 'contain',
+                      display: 'block',
+                    }}
+                  />
+                  <span className="navbar-brand-text" style={{ color: '#000', fontWeight: 600, fontSize: '1.125rem' }}>
+                    {logoText || 'AJ Creative Studio'}
+                  </span>
+                </>
+              )}
             </div>
           </Link>
 

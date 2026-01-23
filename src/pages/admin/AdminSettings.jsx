@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useBranding } from "../../contexts/BrandingContext";
 import { showAlert, showToast } from "../../services/notificationService";
 import {
   FaKey,
@@ -10,10 +11,12 @@ import {
   FaSpinner,
   FaShieldAlt,
   FaCog,
+  FaImage,
 } from "react-icons/fa";
 
 const AdminSettings = () => {
   const { user, token, checkAuth } = useAuth();
+  const { refresh: refreshBranding } = useBranding();
   const [activeTab, setActiveTab] = useState("password");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -26,6 +29,14 @@ const AdminSettings = () => {
     new_password: "",
     new_password_confirmation: "",
   });
+
+  const [brandingLoading, setBrandingLoading] = useState(false);
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [brandingData, setBrandingData] = useState(null);
+  const [brandingText, setBrandingText] = useState("");
+  const [brandingLogoFile, setBrandingLogoFile] = useState(null);
+  const [brandingLogoPreview, setBrandingLogoPreview] = useState(null);
+  const brandingLoadedRef = useRef(false);
 
   const apiBaseUrl =
     import.meta.env.VITE_LARAVEL_API ||
@@ -196,6 +207,52 @@ const AdminSettings = () => {
     setFormErrors({});
   };
 
+  const fetchBranding = async () => {
+    if (!token) return;
+    setBrandingLoading(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/admin/branding`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success && data?.branding) {
+        const resolvedLogoUrl = data.branding.logo_url
+          ? new URL(data.branding.logo_url, apiBaseUrl).toString()
+          : null;
+        setBrandingData(data.branding);
+        setBrandingText(data.branding.logo_text || "AJ Creative Studio");
+        setBrandingLogoPreview(resolvedLogoUrl);
+      } else {
+        showToast.error(data?.message || "Failed to load branding settings.");
+      }
+    } catch (e) {
+      console.error("Branding fetch error:", e);
+      showToast.error("Network error while loading branding settings.");
+    } finally {
+      setBrandingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== "branding") return;
+    if (brandingLoadedRef.current) return;
+    brandingLoadedRef.current = true;
+    fetchBranding();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    return () => {
+      if (brandingLogoPreview && brandingLogoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(brandingLogoPreview);
+      }
+    };
+  }, [brandingLogoPreview]);
+
   return (
     <div className="container-fluid px-3 pt-0 pb-2 fadeIn">
       {/* Header */}
@@ -301,6 +358,70 @@ const AdminSettings = () => {
                       }}
                     >
                       Update administrator password
+                    </small>
+                  </div>
+                </button>
+
+                {/* Branding Tab */}
+                <button
+                  className={`btn text-start p-3 d-flex align-items-center border-0 position-relative overflow-hidden ${
+                    activeTab === "branding" ? "active" : ""
+                  }`}
+                  onClick={() => handleTabChange("branding")}
+                  style={{
+                    background:
+                      activeTab === "branding"
+                        ? `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primaryLight} 100%)`
+                        : "#f8f9fa",
+                    border:
+                      activeTab === "branding" ? "none" : "1px solid #dee2e6",
+                    borderRadius: "8px",
+                    color: activeTab === "branding" ? "white" : "#495057",
+                    fontWeight: activeTab === "branding" ? "600" : "500",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== "branding") {
+                      e.currentTarget.style.background = "#e9ecef";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow =
+                        "0 4px 8px rgba(0,0,0,0.1)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== "branding") {
+                      e.currentTarget.style.background = "#f8f9fa";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }
+                  }}
+                >
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      background:
+                        activeTab === "branding"
+                          ? "rgba(255, 255, 255, 0.2)"
+                          : `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primaryLight} 100%)`,
+                      color: "white",
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    <FaImage size={16} />
+                  </div>
+                  <div className="text-start">
+                    <div className="fw-semibold" style={{ fontSize: "0.9rem" }}>
+                      Branding
+                    </div>
+                    <small
+                      style={{
+                        opacity: activeTab === "branding" ? 0.9 : 0.7,
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      Update logo and brand name
                     </small>
                   </div>
                 </button>
@@ -653,6 +774,231 @@ const AdminSettings = () => {
                     </div>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "branding" && (
+            <div
+              className="card border-0 h-100"
+              style={{ boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)" }}
+            >
+              <div className="card-header bg-transparent border-0 py-3 px-3">
+                <div className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center me-2"
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primaryLight} 100%)`,
+                      color: "white",
+                    }}
+                  >
+                    <FaImage size={14} />
+                  </div>
+                  <h6 className="mb-0 fw-bold" style={{ color: theme.textPrimary }}>
+                    Branding Settings
+                  </h6>
+                </div>
+              </div>
+
+              <div className="card-body p-3">
+                <div
+                  className="alert mb-4 border-0"
+                  style={{
+                    backgroundColor: "rgba(0, 102, 204, 0.08)",
+                    border: "1px solid rgba(0, 102, 204, 0.15)",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  <strong>Tip:</strong> This updates the public storefront logo and brand name.
+                </div>
+
+                {brandingLoading ? (
+                  <div className="d-flex align-items-center gap-2 text-muted">
+                    <FaSpinner className="spinner me-2" style={{ fontSize: "0.9rem" }} />
+                    <span>Loading branding…</span>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+
+                      if (!token) {
+                        showToast.error("You are not authenticated.");
+                        return;
+                      }
+
+                      const result = await showAlert.confirm(
+                        "Update Branding",
+                        "Save these branding changes?",
+                        "Yes, Save",
+                        "Cancel",
+                        {
+                          confirmButtonColor: theme.accent,
+                          cancelButtonColor: "#6c757d",
+                        }
+                      );
+
+                      if (!result.isConfirmed) return;
+
+                      setBrandingSaving(true);
+                      showAlert.loading("Saving Branding…", "Uploading and saving changes.", {
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        allowEnterKey: false,
+                      });
+
+                      try {
+                        const fd = new FormData();
+                        fd.append("logo_text", brandingText);
+                        if (brandingLogoFile) fd.append("logo", brandingLogoFile);
+
+                        const res = await fetch(`${apiBaseUrl}/admin/branding`, {
+                          method: "POST",
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                            Accept: "application/json",
+                          },
+                          body: fd,
+                        });
+
+                        const data = await res.json().catch(() => null);
+                        showAlert.close();
+
+                        if (res.ok && data?.success && data?.branding) {
+                          const resolvedLogoUrl = data.branding.logo_url
+                            ? new URL(data.branding.logo_url, apiBaseUrl).toString()
+                            : null;
+                          setBrandingData(data.branding);
+                          setBrandingText(data.branding.logo_text || "AJ Creative Studio");
+                          setBrandingLogoFile(null);
+                          setBrandingLogoPreview(resolvedLogoUrl);
+                          await refreshBranding();
+                          showToast.success("Branding updated.");
+                        } else if (res.status === 422) {
+                          showToast.error("Validation error. Please check your logo file and text.");
+                        } else {
+                          showToast.error(data?.message || "Failed to update branding.");
+                        }
+                      } catch (err) {
+                        showAlert.close();
+                        console.error("Branding update error:", err);
+                        showToast.error("Network error while saving branding.");
+                      } finally {
+                        setBrandingSaving(false);
+                      }
+                    }}
+                  >
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" style={{ color: theme.textPrimary }}>
+                          Logo Text
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={brandingText}
+                          onChange={(e) => setBrandingText(e.target.value)}
+                          placeholder="AJ Creative Studio"
+                          style={{
+                            background: theme.inputBg,
+                            color: theme.inputText,
+                            border: `1px solid ${theme.inputBorder}`,
+                          }}
+                        />
+                        <small className="text-muted">Shown next to the logo in the navbar.</small>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" style={{ color: theme.textPrimary }}>
+                          Logo Image
+                        </label>
+                        <input
+                          type="file"
+                          className="form-control"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setBrandingLogoFile(file);
+                            if (!file) return;
+                            const url = URL.createObjectURL(file);
+                            setBrandingLogoPreview(url);
+                          }}
+                          style={{
+                            background: theme.inputBg,
+                            color: theme.inputText,
+                            border: `1px solid ${theme.inputBorder}`,
+                          }}
+                        />
+                        <small className="text-muted">PNG/JPG/WEBP up to 2MB.</small>
+                      </div>
+
+                      <div className="col-12">
+                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                          <div className="d-flex align-items-center gap-3">
+                            <div
+                              className="d-flex align-items-center justify-content-center"
+                              style={{
+                                width: 64,
+                                height: 64,
+                                borderRadius: 12,
+                                border: "1px solid rgba(0,0,0,0.1)",
+                                background: "#fff",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {brandingLogoPreview ? (
+                                <img
+                                  src={brandingLogoPreview}
+                                  alt="Logo preview"
+                                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                                />
+                              ) : (
+                                <span className="text-muted" style={{ fontSize: 12 }}>
+                                  No logo
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="fw-semibold" style={{ color: theme.textPrimary }}>
+                                Preview
+                              </div>
+                              <div className="text-muted" style={{ fontSize: 13 }}>
+                                {brandingText || brandingData?.logo_text || "AJ Creative Studio"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="btn d-flex align-items-center gap-2"
+                            disabled={brandingSaving}
+                            style={{
+                              background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primaryLight} 100%)`,
+                              color: "white",
+                              borderRadius: 8,
+                              padding: "0.6rem 1rem",
+                              fontWeight: 600,
+                              border: "none",
+                            }}
+                          >
+                            {brandingSaving ? (
+                              <>
+                                <FaSpinner className="spinner me-2 flex-shrink-0" style={{ fontSize: "0.8rem" }} />
+                                Saving…
+                              </>
+                            ) : (
+                              <>
+                                Save Branding <FaArrowRight />
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           )}

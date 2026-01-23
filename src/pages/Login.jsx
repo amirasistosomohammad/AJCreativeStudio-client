@@ -10,12 +10,13 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../contexts/AuthContext";
+import { useBranding } from "../contexts/BrandingContext";
 
 // Import logo and background
-import Logo from "../assets/images/logo.jpg";
 import BackgroundImage from "../assets/images/background_image.png";
 
 export default function Login() {
+  const { logoSrc, logoText } = useBranding();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ 
     username: "", 
@@ -221,8 +222,8 @@ export default function Login() {
               </div>
             ) : (
               <img
-                src={Logo}
-                alt="AJ Creative Studio Logo"
+                src={logoSrc}
+                alt={`${logoText} Logo`}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -269,7 +270,7 @@ export default function Login() {
               textShadow: "0 2px 8px rgba(0, 0, 0, 0.5)",
             }}
           >
-            Welcome to AJ Creative Studio
+            Welcome to {logoText}
           </h1>
         </div>
       </div>

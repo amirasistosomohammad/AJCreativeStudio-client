@@ -1,12 +1,12 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
-import logoImage from '../../../assets/images/logo.jpg';
 import OtpVerificationModal from '../../../components/OtpVerificationModal';
 import GoogleSignupButton from '../../../components/GoogleSignupButton';
 import GoogleLoginButton from '../../../components/GoogleLoginButton';
 import { showAlert } from '../../../services/notificationService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useBranding } from '../../../contexts/BrandingContext';
 
 // Accept optional props so this can be used as a modal overlay
 // onClose: close handler when used as modal
@@ -15,6 +15,7 @@ const Login = ({ onClose, returnTo }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { checkAuth } = useAuth();
+  const { logoSrc, logoText } = useBranding();
   const isAuthSwap = Boolean(location.state?.authSwap);
   const [isModalVisible, setIsModalVisible] = useState(true);
   const pendingCloseActionRef = useRef(null);
@@ -1177,8 +1178,8 @@ const Login = ({ onClose, returnTo }) => {
           >
             <div className="d-flex align-items-center gap-2">
               <img
-                src={logoImage}
-                alt="AJ Creative Studio logo"
+                src={logoSrc}
+                alt={`${logoText} logo`}
                 style={{
                   height: '40px',
                   width: 'auto',

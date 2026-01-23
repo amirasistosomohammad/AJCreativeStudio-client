@@ -249,37 +249,13 @@ const DynamicProductSection = ({ section }) => {
             flex: 1,
           }}
         >
-          {/* Header banner */}
-          <div
-            className="green-header-banner"
-            style={{
-              backgroundColor: '#4CAF50',
-              padding: '0.75rem',
-              color: '#FFFFFF',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                lineHeight: 1.3,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {product.title.toUpperCase()}
-            </div>
-          </div>
-
           {/* Image */}
           <div
             style={{
               position: 'relative',
               width: '100%',
-              aspectRatio: '4/3',
-              backgroundColor: '#F8F8F8',
+              aspectRatio: '1/1',
+              backgroundColor: '#FFFFFF',
               overflow: 'hidden',
             }}
           >
@@ -325,7 +301,7 @@ const DynamicProductSection = ({ section }) => {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
+                objectFit: 'contain',
                 display: 'block',
                 opacity: imageLoading[product.id] ? 0 : 1,
                 transition: 'opacity 0.3s ease-in-out',
@@ -342,35 +318,6 @@ const DynamicProductSection = ({ section }) => {
                 setImageLoading((prev) => ({ ...prev, [product.id]: false }));
               }}
             />
-          </div>
-
-          {/* Feature bar */}
-          <div
-            style={{
-              backgroundColor: '#E8F5E9',
-              padding: '0.5rem 0.75rem',
-              fontSize: '0.75rem',
-              color: '#2E7D32',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="9" y1="3" x2="9" y2="21" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-            </svg>
-            <span className="feature-bar-text">
-              Google Sheets Document | Easy to use | Mobile Compatibility
-            </span>
           </div>
 
           {/* Content: title + price + Add to cart */}
@@ -399,6 +346,25 @@ const DynamicProductSection = ({ section }) => {
               {product.title}
             </motion.h3>
 
+            {product.category && (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    backgroundColor: '#6c757d',
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '0.375rem',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {product.category}
+                </span>
+              </div>
+            )}
+
             <div
               style={{
                 marginBottom: '0.75rem',
@@ -422,7 +388,7 @@ const DynamicProductSection = ({ section }) => {
                 style={{
                   fontSize: '1rem',
                   fontWeight: 600,
-                  color: '#000',
+                  color: 'var(--primary-color)',
                 }}
               >
                 {formatCurrency(product.price)}
@@ -532,20 +498,7 @@ const DynamicProductSection = ({ section }) => {
             padding: 0 0.25rem !important;
           }
 
-          .feature-bar-text {
-            font-size: 0.6rem !important;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .green-header-banner {
-            padding: 0.5rem 0.5rem !important;
-          }
-
-          .green-header-banner div {
-            font-size: 0.65rem !important;
-          }
+          /* Removed header banner + feature bar from product cards */
 
           .product-title {
             font-size: 0.85rem !important;
@@ -596,14 +549,6 @@ const DynamicProductSection = ({ section }) => {
             font-size: 0.85rem !important;
           }
 
-          .green-header-banner {
-            padding: 0.5rem 0.5rem !important;
-          }
-
-          .green-header-banner div {
-            font-size: 0.65rem !important;
-          }
-
           .product-title {
             font-size: 0.8rem !important;
             margin-bottom: 0.4rem !important;
@@ -614,9 +559,7 @@ const DynamicProductSection = ({ section }) => {
             font-size: 0.8rem !important;
           }
 
-          .feature-bar-text {
-            font-size: 0.6rem !important;
-          }
+          /* Removed header banner + feature bar from product cards */
         }
       `}</style>
       <section

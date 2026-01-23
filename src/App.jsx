@@ -33,6 +33,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import SidebarLayout from './layout/SidebarLayout';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { BrandingProvider } from './contexts/BrandingContext';
 import CartPanel from './components/CartPanel';
 
 // Guard admin pages and re-check token on mount
@@ -309,11 +310,13 @@ const AppContent = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <CartProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </CartProvider>
+      <BrandingProvider>
+        <CartProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </CartProvider>
+      </BrandingProvider>
     </AuthProvider>
   );
 };

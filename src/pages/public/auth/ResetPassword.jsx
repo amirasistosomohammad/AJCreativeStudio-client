@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showAlert } from '../../../services/notificationService';
-import logoImage from '../../../assets/images/logo.jpg';
+import { useBranding } from '../../../contexts/BrandingContext';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const { logoSrc, logoText } = useBranding();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -172,8 +173,8 @@ const ResetPassword = () => {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <img
-            src={logoImage}
-            alt="Logo"
+            src={logoSrc}
+            alt={`${logoText} logo`}
             style={{
               maxWidth: '120px',
               height: 'auto',

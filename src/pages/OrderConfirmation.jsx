@@ -5,6 +5,7 @@ import { useCart } from '../contexts/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getProductImage } from '../utils/productImageUtils';
 import logoImage from '../assets/images/logo.jpg';
+import { useBranding } from '../contexts/BrandingContext';
 
 const formatPHP = (value) =>
   new Intl.NumberFormat('en-PH', {
@@ -19,6 +20,7 @@ const API_BASE_URL =
   'http://localhost:8000';
 
 const OrderConfirmation = () => {
+  const { logoSrc, logoText } = useBranding();
   const { orderNumber } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -350,8 +352,8 @@ const OrderConfirmation = () => {
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '64px', marginBottom: '1rem' }}>📧</div>
                 <img
-                  src={logoImage}
-                  alt="AJ Creative Studio"
+                  src={logoSrc || logoImage}
+                  alt={logoText || 'AJ Creative Studio'}
                   style={{
                     height: '40px',
                     width: 'auto',

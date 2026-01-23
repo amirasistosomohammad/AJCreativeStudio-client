@@ -17,6 +17,41 @@ export const buildAssetUrl = (rawPath) => {
   return `${fileBaseUrl}/storage/${cleaned}`;
 };
 
+const normalizeImageValue = (val) => {
+  if (!val) return null;
+  if (typeof val === 'object') {
+    if (val.url) return buildAssetUrl(val.url);
+    if (val.path) return buildAssetUrl(val.path);
+    if (val.full_url) return buildAssetUrl(val.full_url);
+    return null;
+  }
+  if (typeof val === 'string') {
+    return buildAssetUrl(val);
+  }
+  return null;
+};
+
+const normalizeImageArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map(normalizeImageValue).filter(Boolean);
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.map(normalizeImageValue).filter(Boolean);
+      return [normalizeImageValue(parsed)].filter(Boolean);
+    } catch (e) {
+      // fall back to comma-separated string
+      return val
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map(normalizeImageValue)
+        .filter(Boolean);
+    }
+  }
+  return [normalizeImageValue(val)].filter(Boolean);
+};
+
 export const getProductImage = (product) => {
   if (!product) return null;
   
@@ -35,9 +70,8 @@ export const getProductImage = (product) => {
   }
   
   // Try feature images
-  if (product.feature_images && Array.isArray(product.feature_images) && product.feature_images.length > 0) {
-    return buildAssetUrl(product.feature_images[0]);
-  }
+  const featureImages = normalizeImageArray(product.feature_images);
+  if (featureImages.length > 0) return featureImages[0];
   
   return null;
 };
@@ -48,40 +82,15 @@ export const getAllProductImages = (product) => {
   
   const images = [];
   
-  // First, try to get feature_images array
-  if (product.feature_images) {
-    let featureImagesArray = [];
-    
-    // Handle different formats
-    if (Array.isArray(product.feature_images)) {
-      featureImagesArray = product.feature_images;
-    } else if (typeof product.feature_images === 'string') {
-      try {
-        const parsed = JSON.parse(product.feature_images);
-        featureImagesArray = Array.isArray(parsed) ? parsed : [parsed];
-      } catch (e) {
-        // If not JSON, treat as comma-separated string
-        featureImagesArray = product.feature_images.split(',').map(s => s.trim()).filter(Boolean);
-      }
-    }
-    
-    // Build URLs for all feature images
-    featureImagesArray.forEach(img => {
-      if (img) {
-        const url = buildAssetUrl(img);
-        if (url) images.push(url);
-      }
-    });
-  }
+  // First, try feature_images in any supported format (array, JSON string, comma string, objects)
+  normalizeImageArray(product.feature_images).forEach((url) => {
+    if (url && !images.includes(url)) images.push(url);
+  });
   
   // Also check feature_images_urls if available
-  if (product.feature_images_urls && Array.isArray(product.feature_images_urls)) {
-    product.feature_images_urls.forEach(url => {
-      if (url && !images.includes(url)) {
-        images.push(url);
-      }
-    });
-  }
+  normalizeImageArray(product.feature_images_urls).forEach((url) => {
+    if (url && !images.includes(url)) images.push(url);
+  });
   
   // If no feature images found, try thumbnail as fallback
   if (images.length === 0) {

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { showAlert } from '../../../services/notificationService';
-import logoImage from '../../../assets/images/logo.jpg';
+import { useBranding } from '../../../contexts/BrandingContext';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const { logoSrc, logoText } = useBranding();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -126,8 +127,8 @@ const ForgotPassword = () => {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <img
-            src={logoImage}
-            alt="Logo"
+            src={logoSrc}
+            alt={`${logoText} logo`}
             style={{
               maxWidth: '120px',
               height: 'auto',

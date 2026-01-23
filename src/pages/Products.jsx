@@ -1015,34 +1015,15 @@ const Products = () => {
                         display: 'block',
                       }}
                     >
-                      {/* Header banner */}
-                      <div
-                        style={{
-                          backgroundColor: product.color || '#4CAF50',
-                          padding: '0.75rem',
-                          color: '#FFFFFF',
-                        }}
-                        className="green-header-banner"
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {product.title.toUpperCase()}
-                        </div>
-                      </div>
-
                       {/* Image */}
                       <div
                         style={{
                           position: 'relative',
                           width: '100%',
+                          // Match our generated mockups (and most product images) which are 4:3.
+                          // This avoids the extra top/bottom whitespace you see when using a square container + objectFit: contain.
                           aspectRatio: '4/3',
-                          backgroundColor: '#F8F8F8',
+                          backgroundColor: '#FFFFFF',
                           overflow: 'hidden',
                         }}
                       >
@@ -1102,7 +1083,9 @@ const Products = () => {
                                 style={{
                                   width: '100%',
                                   height: '100%',
-                                  objectFit: 'cover',
+                                  // Force the image to touch all sides (top/right/bottom/left).
+                                  // This will stretch if the image aspect ratio doesn't match the container.
+                                  objectFit: 'fill',
                                   display: 'block',
                                   opacity: isLoaded ? 1 : 0,
                                   transition: 'opacity 0.3s ease',
@@ -1131,46 +1114,6 @@ const Products = () => {
                         })()}
                       </div>
 
-                      {/* Feature bar */}
-                      <div
-                        className="product-feature-bar"
-                        style={{
-                          backgroundColor: '#E8F5E9',
-                          padding: '0.5rem 0.75rem',
-                          fontSize: '0.75rem',
-                          color: '#2E7D32',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                        }}
-                      >
-                        <svg
-                          className="feature-bar-icon"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                          <line x1="9" y1="3" x2="9" y2="21" />
-                          <line x1="3" y1="9" x2="21" y2="9" />
-                        </svg>
-                        <span className="feature-bar-text-full" style={{ 
-                          lineHeight: 1.3,
-                        }}>
-                          Google Sheets Document | Easy to use | Mobile
-                          Compatibility
-                        </span>
-                        <span className="feature-bar-text-mobile" style={{ 
-                          lineHeight: 1.3,
-                          display: 'none',
-                        }}>
-                          Google Sheets
-                        </span>
-                      </div>
-
                       {/* Title + price */}
                       <div className="product-card-content" style={{ padding: '0.75rem', flex: 1 }}>
                         <h3
@@ -1185,6 +1128,24 @@ const Products = () => {
                         >
                           {product.title}
                         </h3>
+                        {product.category && (
+                          <div style={{ marginBottom: '0.5rem' }}>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                backgroundColor: '#6c757d',
+                                color: '#fff',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '0.375rem',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              {product.category}
+                            </span>
+                          </div>
+                        )}
                         <div
                           className="product-price-container"
                           style={{
@@ -1214,9 +1175,9 @@ const Products = () => {
                           <span
                             className="product-price"
                             style={{
-                              fontSize: product.oldPrice ? '1rem' : '1.1rem',
-                              fontWeight: 600,
-                              color: '#000',
+                              fontSize: '1.1rem',
+                              fontWeight: 700,
+                              color: 'var(--primary-color)',
                             }}
                           >
                             ₱
@@ -1535,34 +1496,7 @@ const Products = () => {
           .product-card {
             border-radius: 6px !important;
           }
-          
-          .green-header-banner {
-            padding: 0.5rem !important;
-          }
-          
-          .green-header-banner > div {
-            font-size: 0.65rem !important;
-            line-height: 1.2 !important;
-          }
-          
-          .product-feature-bar {
-            padding: 0.4rem 0.5rem !important;
-            font-size: 0.65rem !important;
-            gap: 0.3rem !important;
-          }
-          
-          .product-feature-bar .feature-bar-icon {
-            width: 12px !important;
-            height: 12px !important;
-          }
-          
-          .product-feature-bar .feature-bar-text-full {
-            display: none !important;
-          }
-          
-          .product-feature-bar .feature-bar-text-mobile {
-            display: inline !important;
-          }
+          /* Removed product card header banner + feature bar */
           
           .product-card-content {
             padding: 0.5rem !important;

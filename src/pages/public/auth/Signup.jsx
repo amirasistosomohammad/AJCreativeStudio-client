@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
-import logoImage from '../../../assets/images/logo.jpg';
 import OtpVerificationModal from '../../../components/OtpVerificationModal';
 import GoogleSignupButton from '../../../components/GoogleSignupButton';
 import { showAlert } from '../../../services/notificationService';
+import { useBranding } from '../../../contexts/BrandingContext';
 
 // Accept optional props so this can be used as a modal overlay
 // onClose: close handler when used as modal
@@ -12,6 +12,7 @@ import { showAlert } from '../../../services/notificationService';
 const Signup = ({ onClose, returnTo }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logoSrc, logoText } = useBranding();
   const [isModalVisible, setIsModalVisible] = useState(true);
   const pendingCloseActionRef = useRef(null);
   const [isAuthSwappingOut, setIsAuthSwappingOut] = useState(false);
@@ -469,8 +470,8 @@ const Signup = ({ onClose, returnTo }) => {
           >
             <div className="d-flex align-items-center gap-2">
               <img
-                src={logoImage}
-                alt="AJ Creative Studio logo"
+                src={logoSrc}
+                alt={`${logoText} logo`}
                 style={{
                   height: '40px',
                   width: 'auto',
