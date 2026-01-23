@@ -774,40 +774,7 @@ const ProductList = () => {
             </div>
           </div>
         </div>
-        <div className="col-6 col-md-3">
-          <div 
-            className="card stats-card h-100 shadow-sm"
-            style={{ 
-              border: '1px solid rgba(0, 0, 0, 0.125)',
-              borderRadius: '0.375rem'
-            }}
-          >
-            <div className="card-body p-3">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1">
-                  <div
-                    className="text-xs fw-semibold text-uppercase mb-1"
-                    style={{ color: 'var(--danger-color)' }}
-                  >
-                    Out of Stock
-                  </div>
-                  <div
-                    className="h4 mb-0 fw-bold"
-                    style={{ color: 'var(--danger-color)' }}
-                  >
-                    {loading ? '...' : statistics.outOfStock}
-                  </div>
-                </div>
-                <div className="col-auto">
-                  <i
-                    className="fas fa-times-circle fa-2x"
-                    style={{ color: '#dc3545', opacity: 0.7 }}
-                  ></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Out of Stock panel removed (not used) */}
       </div>
 
       {/* Search and Filter Controls */}
