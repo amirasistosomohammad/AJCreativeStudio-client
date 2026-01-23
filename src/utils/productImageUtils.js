@@ -1,6 +1,18 @@
 // Utility functions for handling product images from API
 
-const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const rawApiBaseUrl =
+  import.meta.env.VITE_LARAVEL_API ||
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:8000';
+
+// Normalize:
+// - apiBaseUrl: always points to the Laravel API prefix (ends with /api)
+// - fileBaseUrl: origin/base (no /api)
+const apiBaseUrl = (() => {
+  const trimmed = rawApiBaseUrl.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+})();
+
 const fileBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 export const buildAssetUrl = (rawPath) => {
@@ -9,12 +21,17 @@ export const buildAssetUrl = (rawPath) => {
     return rawPath;
   }
   const cleaned = rawPath.replace(/^\/+/, '');
-  if (cleaned.startsWith('storage/')) {
+  // If backend returns an API path, respect it.
+  if (cleaned.startsWith('api/')) {
     return `${fileBaseUrl}/${cleaned}`;
-  } else if (cleaned.startsWith('public/')) {
-    return `${fileBaseUrl}/storage/${cleaned.replace(/^public\//, '')}`;
   }
-  return `${fileBaseUrl}/storage/${cleaned}`;
+  if (cleaned.startsWith('storage/')) {
+    // Prefer API streaming (works on App Platform even when /storage symlink isn't served)
+    return `${apiBaseUrl}/files/${cleaned.replace(/^storage\//, '')}`;
+  } else if (cleaned.startsWith('public/')) {
+    return `${apiBaseUrl}/files/${cleaned.replace(/^public\//, '')}`;
+  }
+  return `${apiBaseUrl}/files/${cleaned}`;
 };
 
 const normalizeImageValue = (val) => {
