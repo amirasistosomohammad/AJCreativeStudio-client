@@ -67,11 +67,6 @@ const normalizeImageArray = (val) => {
 export const getProductImage = (product) => {
   if (!product) return null;
   
-  // OLD WORKING METHOD: Use thumbnail_image_url from API (uses asset('storage/...'))
-  if (product.thumbnail_image_url) {
-    return product.thumbnail_image_url;
-  }
-  
   // Fallback to building URL from path
   if (product.thumbnail_image) {
     return buildAssetUrl(product.thumbnail_image);
@@ -99,14 +94,7 @@ export const getAllProductImages = (product) => {
 
   const images = [];
   
-  // OLD WORKING METHOD: Use feature_images_urls from API (uses asset('storage/...'))
-  if (product.feature_images_urls && Array.isArray(product.feature_images_urls) && product.feature_images_urls.length > 0) {
-    product.feature_images_urls.forEach((url) => {
-      if (url && !images.includes(url)) images.push(url);
-    });
-  }
-  
-  // Fallback to building URLs from paths
+  // Build URLs from paths
   normalizeImageArray(product.feature_images).forEach((url) => {
     if (url && !images.includes(url)) images.push(url);
   });
