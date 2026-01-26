@@ -315,9 +315,9 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         return;
       }
       
-      // Validate file size (10MB max - reduced for DigitalOcean)
-      if (file.size > 10 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, file: 'File size must be less than 10MB' }));
+      // Validate file size (20MB max)
+      if (file.size > 20 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, file: 'File size must be less than 20MB' }));
         // Clear the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -599,8 +599,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         
         if (!allowedExtensions.includes(fileExtension)) {
           newErrors.file = 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.';
-        } else if (selectedFile.size > 10 * 1024 * 1024) {
-          newErrors.file = 'File size must be less than 10MB';
+        } else if (selectedFile.size > 20 * 1024 * 1024) {
+          newErrors.file = 'File size must be less than 20MB';
         }
       }
     }
@@ -1477,7 +1477,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                       {errors.file && (
                         <div className="invalid-feedback">{errors.file}</div>
                       )}
-                      <small className="text-muted">Excel files (.xlsx or .xls) or PDF files (.pdf) are accepted. Maximum file size: 10MB. This file will be available for download by customers.</small>
+                      <small className="text-muted">Excel files (.xlsx or .xls) or PDF files (.pdf) are accepted. Maximum file size: 20MB. This file will be available for download by customers.</small>
                       
                       {/* File Preview */}
                       {(filePreview || selectedFile) && !removeFile && (
