@@ -278,13 +278,13 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
     if (type === 'file' && files && files.length > 0) {
       const file = files[0];
       
-      // STRICT validation - Only Excel files allowed
-      const allowedExtensions = ['.xlsx', '.xls'];
+      // STRICT validation - Excel and PDF files allowed
+      const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
       const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
       
-      // First check: File extension MUST be .xlsx or .xls
+      // First check: File extension MUST be .xlsx, .xls, or .pdf
       if (!allowedExtensions.includes(fileExtension)) {
-        setErrors(prev => ({ ...prev, file: 'Only Excel files (.xlsx or .xls) are allowed. Please select a valid Excel file.' }));
+        setErrors(prev => ({ ...prev, file: 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.' }));
         // Clear the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -300,11 +300,12 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         'application/vnd.ms-excel', // .xls
         'application/excel', // Alternative MIME for .xls
         'application/x-excel', // Alternative MIME for .xls
+        'application/pdf', // .pdf
       ];
       
       // If MIME type is provided and doesn't match, reject (unless it's empty string which some browsers use)
       if (file.type && file.type !== '' && !allowedMimeTypes.includes(file.type)) {
-        setErrors(prev => ({ ...prev, file: 'Invalid file type. Only Excel files (.xlsx or .xls) are allowed.' }));
+        setErrors(prev => ({ ...prev, file: 'Invalid file type. Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed.' }));
         // Clear the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -579,7 +580,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
     // Validate file - REQUIRED for digital products
     if (!isEdit && !selectedFile) {
       // New product must have a file
-      newErrors.file = 'Product file is required. Please upload an Excel file.';
+      newErrors.file = 'Product file is required. Please upload an Excel or PDF file.';
     } else if (isEdit) {
       // When editing: must have either existing file OR new file
       // If removing file, must provide a new one
@@ -590,14 +591,14 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
       if (removeFile && !hasNewFile) {
         newErrors.file = 'You must upload a new product file if you remove the existing one';
       } else if (!hasExistingFile && !hasNewFile && !hasFilePreview) {
-        newErrors.file = 'Product file is required. Please upload an Excel file.';
+        newErrors.file = 'Product file is required. Please upload an Excel or PDF file.';
       } else if (selectedFile) {
         // Validate file type and size if a file is selected
-        const allowedExtensions = ['.xlsx', '.xls'];
+        const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
         const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
         
         if (!allowedExtensions.includes(fileExtension)) {
-          newErrors.file = 'Only Excel files (.xlsx or .xls) are allowed. Please select a valid Excel file.';
+          newErrors.file = 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.';
         } else if (selectedFile.size > 20 * 1024 * 1024) {
           newErrors.file = 'File size must be less than 20MB';
         }
@@ -680,7 +681,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
     
     // Validate file - REQUIRED for digital products
     if (!isEdit && !selectedFile) {
-      validationErrors.file = 'Product file is required. Please upload an Excel file.';
+      validationErrors.file = 'Product file is required. Please upload an Excel or PDF file.';
       isValid = false;
     } else if (isEdit) {
       // When editing: must have either existing file OR new file
@@ -693,14 +694,14 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         validationErrors.file = 'You must upload a new product file if you remove the existing one';
         isValid = false;
       } else if (!hasExistingFile && !hasNewFile && !hasFilePreview) {
-        validationErrors.file = 'Product file is required. Please upload an Excel file.';
+        validationErrors.file = 'Product file is required. Please upload an Excel or PDF file.';
         isValid = false;
       } else if (selectedFile) {
-        const allowedExtensions = ['.xlsx', '.xls'];
+        const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
         const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
         
         if (!allowedExtensions.includes(fileExtension)) {
-          validationErrors.file = 'Only Excel files (.xlsx or .xls) are allowed. Please select a valid Excel file.';
+          validationErrors.file = 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.';
           isValid = false;
         } else if (selectedFile.size > 20 * 1024 * 1024) {
           validationErrors.file = 'File size must be less than 20MB';
@@ -853,17 +854,17 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
           descriptionValue: descriptionValue ? descriptionValue.substring(0, 50) + '...' : 'EMPTY',
         });
         
-        // Handle Excel file
+        // Handle Excel or PDF file
         if (selectedFile) {
           // Final validation before upload - double check file extension
-          const allowedExtensions = ['.xlsx', '.xls'];
+          const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
           const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
           
           if (!allowedExtensions.includes(fileExtension)) {
             showAlert.close();
             showAlert.error(
               'Invalid File Type',
-              'Only Excel files (.xlsx or .xls) are allowed. Please select a valid Excel file.'
+              'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.'
             );
             setLoading(false);
             return;
@@ -1456,19 +1457,19 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                 {/* File Upload Section */}
                 <div className="mb-4">
                   <h6 className="fw-bold text-dark mb-3" style={{ fontSize: '0.95rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
-                    <i className="fas fa-file-excel me-2"></i>Product File (Excel Only)
+                    <i className="fas fa-file-excel me-2"></i>Product File (Excel or PDF)
                   </h6>
                   <div className="row g-3">
                     <div className="col-md-12">
                       <label className="form-label small fw-semibold text-dark mb-1">
-                        Upload Excel File <span className="text-danger">*</span> <small className="text-muted">(.xlsx or .xls only)</small>
+                        Upload Product File <span className="text-danger">*</span> <small className="text-muted">(.xlsx, .xls, or .pdf)</small>
                       </label>
                       <input
                         ref={fileInputRef}
                         type="file"
                         className={`form-control modal-smooth ${errors.file ? 'is-invalid' : ''}`}
                         name="file"
-                        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                        accept=".xlsx,.xls,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf"
                         onChange={handleChange}
                         disabled={loading}
                         style={{ backgroundColor: '#ffffff' }}
@@ -1476,14 +1477,14 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                       {errors.file && (
                         <div className="invalid-feedback">{errors.file}</div>
                       )}
-                      <small className="text-muted">Only Excel files (.xlsx or .xls) are accepted. Maximum file size: 20MB. This file will be available for download by customers.</small>
+                      <small className="text-muted">Excel files (.xlsx or .xls) or PDF files (.pdf) are accepted. Maximum file size: 20MB. This file will be available for download by customers.</small>
                       
                       {/* File Preview */}
                       {(filePreview || selectedFile) && !removeFile && (
                         <div className="mt-3 p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
                           <div className="d-flex align-items-center justify-content-between">
                             <div className="d-flex align-items-center">
-                              <i className="fas fa-file-excel text-success me-2" style={{ fontSize: '1.5rem' }}></i>
+                              <i className={`fas ${(filePreview?.name || selectedFile?.name)?.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf text-danger' : 'fa-file-excel text-success'} me-2`} style={{ fontSize: '1.5rem' }}></i>
                               <div>
                                 <div className="fw-semibold">{filePreview?.name || selectedFile?.name}</div>
                                 <small className="text-muted">
