@@ -528,7 +528,7 @@ const ProductDetail = () => {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#0052A3';
-                }}
+                }}                                                                      
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = '#0066CC';
                 }}
