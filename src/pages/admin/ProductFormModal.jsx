@@ -916,8 +916,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         
         if (thumbnailImage) {
           thumbnailFormData.append('thumbnail_image', thumbnailImage);
-        }
-        
+      }
+
         if (removeThumbnail) {
           thumbnailFormData.append('remove_thumbnail', '1');
         }
@@ -926,8 +926,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
           method: 'POST',
           headers: baseHeaders,
           body: thumbnailFormData,
-        });
-        
+      });
+
         if (!thumbnailResponse.ok) {
           const errorData = await thumbnailResponse.json().catch(() => ({ message: 'Failed to upload thumbnail' }));
           throw new Error(errorData.message || 'Failed to upload thumbnail');
@@ -976,12 +976,12 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         if (!featureResponse.ok) {
           const errorData = await featureResponse.json().catch(() => ({ message: 'Failed to upload feature images' }));
           throw new Error(errorData.message || 'Failed to upload feature images');
-        }
-        
+          }
+          
         const featureData = await featureResponse.json();
         createdProduct = featureData.product || createdProduct;
         console.log('Feature images uploaded');
-      }
+        }
       
       // All done!
       showAlert.close();
