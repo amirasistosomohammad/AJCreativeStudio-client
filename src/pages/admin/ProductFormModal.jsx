@@ -850,50 +850,112 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
           'Uploading Product File',
           needsSplitUpload ? 'Step 2: Uploading product file...' : 'Uploading product file...'
         );
-        
-        const fileFormData = new FormData();
-        fileFormData.append('_method', 'PUT');
-        fileFormData.append('title', formData.title || '');
-        fileFormData.append('subtitle', formData.subtitle || '');
-        fileFormData.append('description', formData.description || '');
-        fileFormData.append('price', parseFloat(formData.price));
-        fileFormData.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
-        fileFormData.append('on_sale', formData.on_sale ? '1' : '0');
-        fileFormData.append('category', formData.category || '');
-        fileFormData.append('is_active', formData.is_active ? '1' : '0');
-        
+
+        // If only removing the existing file (no new file selected), do a tiny request.
+        if (removeFile && !selectedFile) {
+          const removeFormData = new FormData();
+          removeFormData.append('_method', 'PUT');
+          removeFormData.append('remove_file', '1');
+
+          const removeResp = await fetch(`${apiBaseUrl}/products/${productId}`, {
+            method: 'POST',
+            headers: baseHeaders,
+            body: removeFormData,
+          });
+
+          if (!removeResp.ok) {
+            const errorData = await removeResp.json().catch(() => ({ message: 'Failed to remove file' }));
+            throw new Error(errorData.message || 'Failed to remove product file');
+          }
+
+          const removeData = await removeResp.json();
+          createdProduct = removeData.product || createdProduct;
+          console.log('Product file removed');
+        }
+
+        // Upload new product file using chunked upload endpoints to avoid 413 (Content Too Large)
         if (selectedFile) {
           const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
           const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
-          
+
           if (!allowedExtensions.includes(fileExtension)) {
             showAlert.close();
             showAlert.error('Invalid File Type', 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed.');
             setLoading(false);
             return;
           }
-          
-          fileFormData.append('file', selectedFile);
+
+          const CHUNK_SIZE = 512 * 1024; // 512KB chunks (safe under small platform limits)
+          const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+
+          // 1) init
+          const initResp = await fetch(`${apiBaseUrl}/products/${productId}/file-upload/init`, {
+            method: 'POST',
+            headers: {
+              ...baseHeaders,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              file_name: selectedFile.name,
+              file_size: selectedFile.size,
+              total_chunks: totalChunks,
+            }),
+          });
+
+          if (!initResp.ok) {
+            const errorData = await initResp.json().catch(() => ({ message: 'Failed to init chunk upload' }));
+            throw new Error(errorData.message || 'Failed to init product file upload');
+          }
+
+          const initData = await initResp.json();
+          const uploadId = initData.upload_id;
+          if (!uploadId) {
+            throw new Error('Failed to init product file upload (missing upload_id)');
+          }
+
+          // 2) upload chunks
+          for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, selectedFile.size);
+            const blob = selectedFile.slice(start, end);
+
+            const chunkForm = new FormData();
+            chunkForm.append('upload_id', uploadId);
+            chunkForm.append('chunk_index', i.toString());
+            chunkForm.append('total_chunks', totalChunks.toString());
+            chunkForm.append('chunk', blob, selectedFile.name);
+
+            const chunkResp = await fetch(`${apiBaseUrl}/products/${productId}/file-upload/chunk`, {
+              method: 'POST',
+              headers: baseHeaders,
+              body: chunkForm,
+            });
+
+            if (!chunkResp.ok) {
+              const errorData = await chunkResp.json().catch(() => ({ message: `Failed chunk ${i + 1}/${totalChunks}` }));
+              throw new Error(errorData.message || `Failed to upload file chunk ${i + 1}/${totalChunks}`);
+            }
+          }
+
+          // 3) complete
+          const completeResp = await fetch(`${apiBaseUrl}/products/${productId}/file-upload/complete`, {
+            method: 'POST',
+            headers: {
+              ...baseHeaders,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ upload_id: uploadId }),
+          });
+
+          if (!completeResp.ok) {
+            const errorData = await completeResp.json().catch(() => ({ message: 'Failed to finalize upload' }));
+            throw new Error(errorData.message || 'Failed to finalize product file upload');
+          }
+
+          const completeData = await completeResp.json();
+          createdProduct = completeData.product || createdProduct;
+          console.log('Product file uploaded (chunked)');
         }
-        
-        if (removeFile) {
-          fileFormData.append('remove_file', '1');
-        }
-        
-        const fileResponse = await fetch(`${apiBaseUrl}/products/${productId}`, {
-          method: 'POST',
-          headers: baseHeaders,
-          body: fileFormData,
-        });
-        
-        if (!fileResponse.ok) {
-          const errorData = await fileResponse.json().catch(() => ({ message: 'Failed to upload file' }));
-          throw new Error(errorData.message || 'Failed to upload product file');
-        }
-        
-        const fileData = await fileResponse.json();
-        createdProduct = fileData.product || createdProduct;
-        console.log('Product file uploaded');
       }
       
       // STEP 3: Upload thumbnail (if needed) - separate request
@@ -944,42 +1006,54 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
           'Uploading Feature Images',
           needsSplitUpload ? 'Step 4: Uploading feature images...' : 'Uploading feature images...'
         );
-        
-        const featureFormData = new FormData();
-        featureFormData.append('_method', 'PUT');
-        featureFormData.append('title', formData.title || '');
-        featureFormData.append('subtitle', formData.subtitle || '');
-        featureFormData.append('description', formData.description || '');
-        featureFormData.append('price', parseFloat(formData.price));
-        featureFormData.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
-        featureFormData.append('on_sale', formData.on_sale ? '1' : '0');
-        featureFormData.append('category', formData.category || '');
-        featureFormData.append('is_active', formData.is_active ? '1' : '0');
-        
-        featureImages.forEach((image, index) => {
-          featureFormData.append(`feature_images[${index}]`, image);
-        });
-        
+
+        // 4a) removal first (tiny request)
         if (removedFeatureImageIndices.length > 0) {
+          const removeFeatureForm = new FormData();
+          removeFeatureForm.append('_method', 'PUT');
           const sortedIndices = [...removedFeatureImageIndices].sort((a, b) => a - b);
           sortedIndices.forEach((index, idx) => {
-            featureFormData.append(`remove_feature_images[${idx}]`, index.toString());
+            removeFeatureForm.append(`remove_feature_images[${idx}]`, index.toString());
           });
-        }
-        
-        const featureResponse = await fetch(`${apiBaseUrl}/products/${productId}`, {
-          method: 'POST',
-          headers: baseHeaders,
-          body: featureFormData,
-        });
-        
-        if (!featureResponse.ok) {
-          const errorData = await featureResponse.json().catch(() => ({ message: 'Failed to upload feature images' }));
-          throw new Error(errorData.message || 'Failed to upload feature images');
+
+          const removeResp = await fetch(`${apiBaseUrl}/products/${productId}`, {
+            method: 'POST',
+            headers: baseHeaders,
+            body: removeFeatureForm,
+          });
+
+          if (!removeResp.ok) {
+            const errorData = await removeResp.json().catch(() => ({ message: 'Failed to remove feature images' }));
+            throw new Error(errorData.message || 'Failed to remove feature images');
           }
-          
-        const featureData = await featureResponse.json();
-        createdProduct = featureData.product || createdProduct;
+
+          const removeData = await removeResp.json();
+          createdProduct = removeData.product || createdProduct;
+          console.log('Feature images removed');
+        }
+
+        // 4b) upload each feature image one-by-one (avoids large multi-file request)
+        for (let i = 0; i < featureImages.length; i++) {
+          const image = featureImages[i];
+          const singleForm = new FormData();
+          singleForm.append('_method', 'PUT');
+          singleForm.append('feature_images[0]', image);
+
+          const uploadResp = await fetch(`${apiBaseUrl}/products/${productId}`, {
+            method: 'POST',
+            headers: baseHeaders,
+            body: singleForm,
+          });
+
+          if (!uploadResp.ok) {
+            const errorData = await uploadResp.json().catch(() => ({ message: `Failed to upload feature image ${i + 1}` }));
+            throw new Error(errorData.message || `Failed to upload feature image ${i + 1}`);
+          }
+
+          const uploadData = await uploadResp.json();
+          createdProduct = uploadData.product || createdProduct;
+        }
+
         console.log('Feature images uploaded');
         }
       
