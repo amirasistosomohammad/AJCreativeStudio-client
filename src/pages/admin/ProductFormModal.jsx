@@ -315,9 +315,9 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         return;
       }
       
-      // Validate file size (20MB max)
-      if (file.size > 20 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, file: 'File size must be less than 20MB' }));
+      // Validate file size (10MB max - reduced for DigitalOcean)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, file: 'File size must be less than 10MB' }));
         // Clear the file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -388,9 +388,9 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, thumbnail: 'Thumbnail image must be less than 5MB' }));
+    // Validate file size (2MB max - reduced for DigitalOcean)
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, thumbnail: 'Thumbnail image must be less than 2MB' }));
       if (thumbnailInputRef.current) {
         thumbnailInputRef.current.value = '';
       }
@@ -441,10 +441,10 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
       return;
     }
 
-    // Validate file sizes (5MB max per image)
-    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    // Validate file sizes (2MB max per image - reduced for DigitalOcean)
+    const oversizedFiles = files.filter(file => file.size > 2 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      setErrors(prev => ({ ...prev, feature_images: 'Each feature image must be less than 5MB' }));
+      setErrors(prev => ({ ...prev, feature_images: 'Each feature image must be less than 2MB' }));
       if (featureImagesInputRef.current) {
         featureImagesInputRef.current.value = '';
       }
@@ -599,8 +599,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         
         if (!allowedExtensions.includes(fileExtension)) {
           newErrors.file = 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.';
-        } else if (selectedFile.size > 20 * 1024 * 1024) {
-          newErrors.file = 'File size must be less than 20MB';
+        } else if (selectedFile.size > 10 * 1024 * 1024) {
+          newErrors.file = 'File size must be less than 10MB';
         }
       }
     }
@@ -1308,7 +1308,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                       {errors.thumbnail && (
                         <div className="invalid-feedback">{errors.thumbnail}</div>
                       )}
-                      <small className="text-muted">Upload a thumbnail image for product cards. Recommended size: 400x400px. Maximum file size: 5MB.</small>
+                      <small className="text-muted">Upload a thumbnail image for product cards. Recommended size: 400x400px. Maximum file size: 2MB.</small>
                       
                       {/* Thumbnail Preview */}
                       {(thumbnailPreview || thumbnailImage) && !removeThumbnail && (
@@ -1407,7 +1407,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                       {errors.feature_images && (
                         <div className="invalid-feedback">{errors.feature_images}</div>
                       )}
-                      <small className="text-muted">Upload multiple images for the product detail slider. Recommended size: 1200x800px. Maximum 10 images, 5MB per image.</small>
+                      <small className="text-muted">Upload multiple images for the product detail slider. Recommended size: 1200x800px. Maximum 10 images, 2MB per image.</small>
                       
                       {/* Feature Images Preview */}
                       {(featureImagePreviews.length > 0 || featureImages.length > 0) && (
@@ -1477,7 +1477,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                       {errors.file && (
                         <div className="invalid-feedback">{errors.file}</div>
                       )}
-                      <small className="text-muted">Excel files (.xlsx or .xls) or PDF files (.pdf) are accepted. Maximum file size: 20MB. This file will be available for download by customers.</small>
+                      <small className="text-muted">Excel files (.xlsx or .xls) or PDF files (.pdf) are accepted. Maximum file size: 10MB. This file will be available for download by customers.</small>
                       
                       {/* File Preview */}
                       {(filePreview || selectedFile) && !removeFile && (
