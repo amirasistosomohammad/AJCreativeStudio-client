@@ -316,17 +316,17 @@ const Navbar = () => {
                   <img
                     src={logoSrc}
                     alt={`${logoText || 'AJ Creative Studio'} logo`}
-                    className="navbar-logo"
-                    style={{
-                      height: '40px',
-                      width: 'auto',
-                      objectFit: 'contain',
-                      display: 'block',
-                    }}
-                  />
-                  <span className="navbar-brand-text" style={{ color: '#000', fontWeight: 600, fontSize: '1.125rem' }}>
+                className="navbar-logo"
+                style={{
+                  height: '40px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+              <span className="navbar-brand-text" style={{ color: '#000', fontWeight: 600, fontSize: '1.125rem' }}>
                     {logoText || 'AJ Creative Studio'}
-                  </span>
+              </span>
                 </>
               )}
             </div>

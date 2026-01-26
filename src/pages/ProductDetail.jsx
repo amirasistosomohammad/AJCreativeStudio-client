@@ -477,7 +477,7 @@ const ProductDetail = () => {
                 fontSize: '0.95rem',
                 color: '#333',
                 lineHeight: 1.6,
-              }}
+              }}  
             />
           </div>
         ),

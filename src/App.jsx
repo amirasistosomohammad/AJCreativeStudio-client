@@ -311,11 +311,11 @@ const App = () => {
   return (
     <AuthProvider>
       <BrandingProvider>
-        <CartProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </CartProvider>
+      <CartProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </CartProvider>
       </BrandingProvider>
     </AuthProvider>
   );
