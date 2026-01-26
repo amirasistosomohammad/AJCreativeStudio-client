@@ -764,269 +764,230 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
     setLoading(true);
 
     try {
-      showAlert.loading(
-        isEdit ? 'Updating Product' : 'Creating Product',
-        'Please wait while we save the product information...'
-      );
-
-      // For file uploads with PUT, Laravel may require POST with _method=PUT
-      // But let's try PUT first and see if it works
-      // Always use FormData when images or files are involved
-      // Use FormData if: new product, file selected/removed, thumbnail selected/removed, feature images selected, or feature images removed
-      const hasImagesOrFiles = !isEdit || selectedFile || removeFile || thumbnailImage || removeThumbnail || featureImages.length > 0 || removedFeatureImageIndices.length > 0;
+      // Calculate total file size to decide if we need to split uploads
+      let totalFileSize = 0;
+      if (selectedFile) totalFileSize += selectedFile.size;
+      if (thumbnailImage) totalFileSize += thumbnailImage.size;
+      featureImages.forEach(img => totalFileSize += img.size);
       
-      const url = isEdit
-        ? `${apiBaseUrl}/products/${product.id}`
-        : `${apiBaseUrl}/products`;
+      const totalSizeMB = totalFileSize / (1024 * 1024);
+      const needsSplitUpload = totalSizeMB > 3; // Split if total > 3MB to avoid 413 errors
       
-      // Use POST with _method=PUT for file uploads if we have images/files
-      // This is more reliable for Laravel file handling
-      const usePostMethod = hasImagesOrFiles && isEdit;
-      const method = usePostMethod ? 'POST' : (isEdit ? 'PUT' : 'POST');
+      console.log('Total file size:', totalSizeMB.toFixed(2), 'MB');
+      console.log('Using split upload:', needsSplitUpload);
       
-      // Debug: Log what we're sending
-      console.log('=== PRODUCT UPDATE DEBUG ===');
-      console.log('isEdit:', isEdit);
-      console.log('selectedFile:', !!selectedFile);
-      console.log('removeFile:', removeFile);
-      console.log('thumbnailImage:', !!thumbnailImage);
-      console.log('removeThumbnail:', removeThumbnail);
-      console.log('featureImages.length:', featureImages.length);
-      console.log('removedFeatureImageIndices:', removedFeatureImageIndices);
-      console.log('hasImagesOrFiles:', hasImagesOrFiles);
-      
-      let requestBody;
-      let headers = {
+      const baseHeaders = {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
       };
-
-      if (hasImagesOrFiles) {
-        // Use FormData for file/image upload or removal
-        const formDataToSend = new FormData();
-        
-        // If using POST for PUT update, add _method field for Laravel
-        if (usePostMethod) {
-          formDataToSend.append('_method', 'PUT');
-          console.log('Using POST with _method=PUT for file upload');
+      
+      let createdProduct = null;
+      
+      // STEP 1: Create/Update product with basic info only (no files) - JSON request
+      showAlert.loading(
+        isEdit ? 'Updating Product' : 'Creating Product',
+        needsSplitUpload 
+          ? 'Step 1: Saving product information...' 
+          : 'Please wait while we save the product information...'
+      );
+      
+      const baseUrl = isEdit
+        ? `${apiBaseUrl}/products/${product.id}`
+        : `${apiBaseUrl}/products`;
+      
+      const baseData = {
+        title: formData.title || '',
+        subtitle: formData.subtitle || '',
+        description: formData.description || '',
+        price: parseFloat(formData.price),
+        old_price: formData.old_price ? parseFloat(formData.old_price) : null,
+        on_sale: formData.on_sale ? 1 : 0,
+        category: formData.category || '',
+        is_active: formData.is_active ? 1 : 0,
+      };
+      
+      const createResponse = await fetch(baseUrl, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          ...baseHeaders,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(baseData),
+      });
+      
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({ message: 'Failed to create product' }));
+        if (errorData.message === 'Unauthenticated.') {
+          showAlert.close();
+          showAlert.error('Session Expired', 'Your session has expired. Please log in again.');
+          setLoading(false);
+          return;
         }
+        throw new Error(errorData.message || `Failed to ${isEdit ? 'update' : 'create'} product`);
+      }
+      
+      const createData = await createResponse.json();
+      createdProduct = createData.product || createData;
+      const productId = createdProduct.id;
+      
+      console.log('Product created/updated with ID:', productId);
+      
+      // If no files to upload, we're done
+      const hasFiles = selectedFile || removeFile || thumbnailImage || removeThumbnail || featureImages.length > 0 || removedFeatureImageIndices.length > 0;
+      
+      if (!hasFiles) {
+        showAlert.close();
+        toast.success(isEdit ? 'Product updated successfully!' : 'Product created successfully!');
+        setHasUnsavedChanges(false);
+        onSave(createdProduct);
+        setLoading(false);
+        return;
+      }
+      
+      // STEP 2: Upload product file (if needed) - separate request
+      if (selectedFile || removeFile) {
+        showAlert.loading(
+          'Uploading Product File',
+          needsSplitUpload ? 'Step 2: Uploading product file...' : 'Uploading product file...'
+        );
         
-        // Debug: Log formData values before sending
-        console.log('FormData values before sending:', {
-          title: formData.title,
-          subtitle: formData.subtitle,
-          description: formData.description,
-          category: formData.category,
-        });
+        const fileFormData = new FormData();
+        fileFormData.append('_method', 'PUT');
+        fileFormData.append('title', formData.title || '');
+        fileFormData.append('subtitle', formData.subtitle || '');
+        fileFormData.append('description', formData.description || '');
+        fileFormData.append('price', parseFloat(formData.price));
+        fileFormData.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
+        fileFormData.append('on_sale', formData.on_sale ? '1' : '0');
+        fileFormData.append('category', formData.category || '');
+        fileFormData.append('is_active', formData.is_active ? '1' : '0');
         
-        formDataToSend.append('title', formData.title || '');
-        
-        // Ensure subtitle and description are sent with actual content
-        // RichTextEditor returns HTML, so we need to check if it has actual content
-        const subtitleValue = formData.subtitle || '';
-        const descriptionValue = formData.description || '';
-        
-        // Strip HTML tags to check if there's actual text content
-        const subtitleText = subtitleValue.replace(/<[^>]*>/g, '').trim();
-        const descriptionText = descriptionValue.replace(/<[^>]*>/g, '').trim();
-        
-        if (!subtitleText) {
-          console.error('Subtitle is empty after stripping HTML');
-        }
-        if (!descriptionText) {
-          console.error('Description is empty after stripping HTML');
-        }
-        
-        // Always append subtitle and description, even if empty (backend will validate content)
-        formDataToSend.append('subtitle', subtitleValue || '');
-        formDataToSend.append('price', parseFloat(formData.price));
-        formDataToSend.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
-        formDataToSend.append('on_sale', formData.on_sale ? '1' : '0');
-        formDataToSend.append('category', formData.category || '');
-        formDataToSend.append('description', descriptionValue || '');
-        formDataToSend.append('is_active', formData.is_active ? '1' : '0');
-        
-        // Debug: Verify FormData contents
-        console.log('FormData entries:', {
-          hasSubtitle: formDataToSend.has('subtitle'),
-          hasDescription: formDataToSend.has('description'),
-          subtitleValue: subtitleValue ? subtitleValue.substring(0, 50) + '...' : 'EMPTY',
-          descriptionValue: descriptionValue ? descriptionValue.substring(0, 50) + '...' : 'EMPTY',
-        });
-        
-        // Handle Excel or PDF file
         if (selectedFile) {
-          // Final validation before upload - double check file extension
           const allowedExtensions = ['.xlsx', '.xls', '.pdf'];
           const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
           
           if (!allowedExtensions.includes(fileExtension)) {
             showAlert.close();
-            showAlert.error(
-              'Invalid File Type',
-              'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed. Please select a valid file.'
-            );
+            showAlert.error('Invalid File Type', 'Only Excel files (.xlsx or .xls) or PDF files (.pdf) are allowed.');
             setLoading(false);
             return;
           }
           
-          formDataToSend.append('file', selectedFile);
+          fileFormData.append('file', selectedFile);
         }
         
         if (removeFile) {
-          formDataToSend.append('remove_file', '1');
+          fileFormData.append('remove_file', '1');
         }
         
-        // Handle thumbnail image
+        const fileResponse = await fetch(`${apiBaseUrl}/products/${productId}`, {
+          method: 'POST',
+          headers: baseHeaders,
+          body: fileFormData,
+        });
+        
+        if (!fileResponse.ok) {
+          const errorData = await fileResponse.json().catch(() => ({ message: 'Failed to upload file' }));
+          throw new Error(errorData.message || 'Failed to upload product file');
+        }
+        
+        const fileData = await fileResponse.json();
+        createdProduct = fileData.product || createdProduct;
+        console.log('Product file uploaded');
+      }
+      
+      // STEP 3: Upload thumbnail (if needed) - separate request
+      if (thumbnailImage || removeThumbnail) {
+        showAlert.loading(
+          'Uploading Thumbnail',
+          needsSplitUpload ? 'Step 3: Uploading thumbnail image...' : 'Uploading thumbnail image...'
+        );
+        
+        const thumbnailFormData = new FormData();
+        thumbnailFormData.append('_method', 'PUT');
+        thumbnailFormData.append('title', formData.title || '');
+        thumbnailFormData.append('subtitle', formData.subtitle || '');
+        thumbnailFormData.append('description', formData.description || '');
+        thumbnailFormData.append('price', parseFloat(formData.price));
+        thumbnailFormData.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
+        thumbnailFormData.append('on_sale', formData.on_sale ? '1' : '0');
+        thumbnailFormData.append('category', formData.category || '');
+        thumbnailFormData.append('is_active', formData.is_active ? '1' : '0');
+        
         if (thumbnailImage) {
-          console.log('Appending thumbnail_image:', thumbnailImage.name, thumbnailImage.size);
-          formDataToSend.append('thumbnail_image', thumbnailImage);
+          thumbnailFormData.append('thumbnail_image', thumbnailImage);
         }
         
         if (removeThumbnail) {
-          console.log('Appending remove_thumbnail flag');
-          formDataToSend.append('remove_thumbnail', '1');
+          thumbnailFormData.append('remove_thumbnail', '1');
         }
         
-        // Handle feature images
-        console.log('Appending feature images:', featureImages.length);
-        featureImages.forEach((image, index) => {
-          console.log(`  feature_images[${index}]:`, image.name, image.size);
-          formDataToSend.append(`feature_images[${index}]`, image);
+        const thumbnailResponse = await fetch(`${apiBaseUrl}/products/${productId}`, {
+          method: 'POST',
+          headers: baseHeaders,
+          body: thumbnailFormData,
         });
         
-        // Send removed feature image indices to backend
-        // Laravel expects remove_feature_images as an array, so we need to send it correctly
+        if (!thumbnailResponse.ok) {
+          const errorData = await thumbnailResponse.json().catch(() => ({ message: 'Failed to upload thumbnail' }));
+          throw new Error(errorData.message || 'Failed to upload thumbnail');
+        }
+        
+        const thumbnailData = await thumbnailResponse.json();
+        createdProduct = thumbnailData.product || createdProduct;
+        console.log('Thumbnail uploaded');
+      }
+      
+      // STEP 4: Upload feature images (if needed) - separate request
+      if (featureImages.length > 0 || removedFeatureImageIndices.length > 0) {
+        showAlert.loading(
+          'Uploading Feature Images',
+          needsSplitUpload ? 'Step 4: Uploading feature images...' : 'Uploading feature images...'
+        );
+        
+        const featureFormData = new FormData();
+        featureFormData.append('_method', 'PUT');
+        featureFormData.append('title', formData.title || '');
+        featureFormData.append('subtitle', formData.subtitle || '');
+        featureFormData.append('description', formData.description || '');
+        featureFormData.append('price', parseFloat(formData.price));
+        featureFormData.append('old_price', formData.old_price ? parseFloat(formData.old_price) : '');
+        featureFormData.append('on_sale', formData.on_sale ? '1' : '0');
+        featureFormData.append('category', formData.category || '');
+        featureFormData.append('is_active', formData.is_active ? '1' : '0');
+        
+        featureImages.forEach((image, index) => {
+          featureFormData.append(`feature_images[${index}]`, image);
+        });
+        
         if (removedFeatureImageIndices.length > 0) {
-          console.log('Appending removed feature image indices:', removedFeatureImageIndices);
-          // Sort indices to ensure correct order
           const sortedIndices = [...removedFeatureImageIndices].sort((a, b) => a - b);
           sortedIndices.forEach((index, idx) => {
-            // Send as sequential indexed array: remove_feature_images[0], remove_feature_images[1], etc.
-            // The value is the actual index in the product's feature_images array
-            formDataToSend.append(`remove_feature_images[${idx}]`, index.toString());
+            featureFormData.append(`remove_feature_images[${idx}]`, index.toString());
           });
-          console.log('Sent remove_feature_images array:', sortedIndices);
         }
         
-        // Debug: Log all FormData entries
-        console.log('FormData entries:');
-        for (let pair of formDataToSend.entries()) {
-          if (pair[1] instanceof File) {
-            console.log(`  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`);
-          } else {
-            console.log(`  ${pair[0]}: ${pair[1]}`);
-          }
-        }
-        
-        requestBody = formDataToSend;
-        // Don't set Content-Type header - browser will set it with boundary for FormData
-      } else {
-        // Use JSON for regular updates without files/images
-        // Always include subtitle and description fields, even if empty
-        const submitData = {
-          ...formData,
-          price: parseFloat(formData.price),
-          old_price: formData.old_price ? parseFloat(formData.old_price) : null,
-          subtitle: formData.subtitle || '', // Always send as string, never null
-          description: formData.description || '', // Always send as string, never null
-        };
-        
-        // Debug: Log JSON payload
-        console.log('JSON payload before sending:', {
-          title: submitData.title,
-          subtitle: submitData.subtitle ? submitData.subtitle.substring(0, 50) + '...' : 'EMPTY',
-          description: submitData.description ? submitData.description.substring(0, 50) + '...' : 'EMPTY',
-          category: submitData.category,
+        const featureResponse = await fetch(`${apiBaseUrl}/products/${productId}`, {
+          method: 'POST',
+          headers: baseHeaders,
+          body: featureFormData,
         });
         
-        requestBody = JSON.stringify(submitData);
-        headers['Content-Type'] = 'application/json';
+        if (!featureResponse.ok) {
+          const errorData = await featureResponse.json().catch(() => ({ message: 'Failed to upload feature images' }));
+          throw new Error(errorData.message || 'Failed to upload feature images');
+        }
+        
+        const featureData = await featureResponse.json();
+        createdProduct = featureData.product || createdProduct;
+        console.log('Feature images uploaded');
       }
-
-      console.log('Sending request to:', url);
-      console.log('Method:', method);
-      console.log('Using FormData:', hasImagesOrFiles);
       
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: requestBody,
-      });
-
-      console.log('Response status:', response.status);
-      const data = await response.json();
-      console.log('Response data:', data);
+      // All done!
       showAlert.close();
-
-      if (response.ok) {
-        // Debug: Log the response to see what the backend returned
-        console.log('=== PRODUCT UPDATE SUCCESS ===');
-        console.log('Full response:', data);
-        if (data.product) {
-          console.log('Updated product ID:', data.product.id);
-          console.log('Updated product thumbnail:', data.product.thumbnail_image);
-          console.log('Updated product feature_images:', data.product.feature_images);
-          console.log('Updated product feature_images type:', typeof data.product.feature_images);
-          console.log('Updated product feature_images is array:', Array.isArray(data.product.feature_images));
-          console.log('Added by user ID:', data.product.added_by_user_id);
-          console.log('Added by user type:', data.product.added_by_user_type);
-          console.log('Added by name:', data.product.added_by_name);
-          console.log('Added by admin:', data.product.added_by_admin);
-          console.log('Added by personnel:', data.product.added_by_personnel);
-        } else {
-          console.warn('Response does not contain product data!');
-        }
-        toast.success(
-          isEdit ? 'Product updated successfully!' : 'Product created successfully!'
-        );
-        setHasUnsavedChanges(false);
-        onSave(data.product || data);
-      } else {
-        if (data.message === 'Unauthenticated.') {
-          showAlert.error(
-            'Session Expired',
-            'Your session has expired. Please log in again.'
-          );
-          return;
-        }
-
-        if (data.errors) {
-          // Laravel validation errors come as arrays, so we need to flatten them
-          const flattenedErrors = {};
-          Object.keys(data.errors).forEach(key => {
-            // If the error is an array, take the first message
-            // If it's already a string, use it directly
-            const errorValue = Array.isArray(data.errors[key]) 
-              ? data.errors[key][0] 
-              : data.errors[key];
-            
-            // Map backend field names to frontend field names if needed
-            // Laravel might use 'name' but frontend uses 'title' for products
-            const frontendFieldName = key === 'name' ? 'title' : key;
-            flattenedErrors[frontendFieldName] = errorValue;
-          });
-          
-          setErrors(flattenedErrors);
-          
-          // Show toast with all errors or first error
-          const errorMessages = Object.entries(flattenedErrors)
-            .map(([field, msg]) => `${field}: ${msg}`)
-            .join(', ');
-          
-          if (errorMessages) {
-            toast.error(errorMessages);
-          } else {
-            toast.error('Please fix the errors in the form');
-          }
-          
-          // Don't throw error - just return so user can see the errors
-          return;
-        }
-        throw new Error(
-          data.message || `Failed to ${isEdit ? 'update' : 'create'} product`
-        );
-      }
+      toast.success(isEdit ? 'Product updated successfully!' : 'Product created successfully!');
+      setHasUnsavedChanges(false);
+      onSave(createdProduct);
     } catch (error) {
       showAlert.close();
       console.error('Error saving product:', error);
