@@ -20,13 +20,14 @@ export const buildAssetUrl = (rawPath) => {
   if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
     return rawPath;
   }
-  // OLD WORKING METHOD: Use /storage/ directly (like asset() helper does)
+  // Use API route for storage files (works on DigitalOcean)
   const cleaned = rawPath.replace(/^\/+/, '');
-  if (cleaned.startsWith('storage/')) {
-    return `${fileBaseUrl}/${cleaned}`;
-  }
-  // If path doesn't start with storage/, prepend it
-  return `${fileBaseUrl}/storage/${cleaned}`;
+  // Remove 'storage/' prefix if present since we'll add /api/storage/
+  const pathWithoutStorage = cleaned.startsWith('storage/') 
+    ? cleaned.replace(/^storage\//, '') 
+    : cleaned;
+  // Use API route: /api/storage/{path}
+  return `${apiBaseUrl}/storage/${pathWithoutStorage}`;
 };
 
 const normalizeImageValue = (val) => {
