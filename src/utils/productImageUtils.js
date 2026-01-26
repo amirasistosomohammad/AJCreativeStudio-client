@@ -72,7 +72,21 @@ const normalizeImageArray = (val) => {
 export const getProductImage = (product) => {
   if (!product) return null;
   
-  // Try thumbnail first
+  // NEW METHOD: Use product ID endpoint like branding does
+  if (product.id) {
+    const apiBaseUrl = (() => {
+      const rawApiBaseUrl =
+        import.meta.env.VITE_LARAVEL_API ||
+        import.meta.env.VITE_API_URL ||
+        'http://localhost:8000';
+      const trimmed = rawApiBaseUrl.replace(/\/+$/, '');
+      return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+    })();
+    
+    return `${apiBaseUrl}/products/${product.id}/thumbnail?v=${Date.now()}`;
+  }
+  
+  // Fallback to old method
   if (product.thumbnail_image) {
     return buildAssetUrl(product.thumbnail_image);
   }
@@ -96,20 +110,46 @@ export const getProductImage = (product) => {
 // Get all feature images from a product
 export const getAllProductImages = (product) => {
   if (!product) return [];
-  
+
   const images = [];
   
-  // First, try feature_images in any supported format (array, JSON string, comma string, objects)
+  // NEW METHOD: Use product ID endpoint for feature images (fetches from DB)
+  if (product.id) {
+    const apiBaseUrl = (() => {
+      const rawApiBaseUrl =
+        import.meta.env.VITE_LARAVEL_API ||
+        import.meta.env.VITE_API_URL ||
+        'http://localhost:8000';
+      const trimmed = rawApiBaseUrl.replace(/\/+$/, '');
+      return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+    })();
+    
+    // Get feature images count from product
+    const featureImages = normalizeImageArray(product.feature_images);
+    if (featureImages.length > 0) {
+      featureImages.forEach((_, index) => {
+        images.push(`${apiBaseUrl}/products/${product.id}/feature/${index}?v=${Date.now()}`);
+      });
+    }
+    
+    // Add thumbnail as first image
+    const thumbnail = getProductImage(product);
+    if (thumbnail) {
+      images.unshift(thumbnail);
+    }
+    
+    return images.length > 0 ? images : [];
+  }
+  
+  // Fallback to old method
   normalizeImageArray(product.feature_images).forEach((url) => {
     if (url && !images.includes(url)) images.push(url);
   });
   
-  // Also check feature_images_urls if available
   normalizeImageArray(product.feature_images_urls).forEach((url) => {
     if (url && !images.includes(url)) images.push(url);
   });
   
-  // If no feature images found, try thumbnail as fallback
   if (images.length === 0) {
     const thumbnail = getProductImage(product);
     if (thumbnail) {
