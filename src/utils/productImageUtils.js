@@ -20,18 +20,13 @@ export const buildAssetUrl = (rawPath) => {
   if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
     return rawPath;
   }
+  // OLD WORKING METHOD: Use /storage/ directly (like asset() helper does)
   const cleaned = rawPath.replace(/^\/+/, '');
-  // If backend returns an API path, respect it.
-  if (cleaned.startsWith('api/')) {
+  if (cleaned.startsWith('storage/')) {
     return `${fileBaseUrl}/${cleaned}`;
   }
-  if (cleaned.startsWith('storage/')) {
-    // Prefer API streaming (works on App Platform even when /storage symlink isn't served)
-    return `${apiBaseUrl}/files/${cleaned.replace(/^storage\//, '')}`;
-  } else if (cleaned.startsWith('public/')) {
-    return `${apiBaseUrl}/files/${cleaned.replace(/^public\//, '')}`;
-  }
-  return `${apiBaseUrl}/files/${cleaned}`;
+  // If path doesn't start with storage/, prepend it
+  return `${fileBaseUrl}/storage/${cleaned}`;
 };
 
 const normalizeImageValue = (val) => {
@@ -72,21 +67,12 @@ const normalizeImageArray = (val) => {
 export const getProductImage = (product) => {
   if (!product) return null;
   
-  // NEW METHOD: Use product ID endpoint like branding does
-  if (product.id) {
-    const apiBaseUrl = (() => {
-      const rawApiBaseUrl =
-        import.meta.env.VITE_LARAVEL_API ||
-        import.meta.env.VITE_API_URL ||
-        'http://localhost:8000';
-      const trimmed = rawApiBaseUrl.replace(/\/+$/, '');
-      return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
-    })();
-    
-    return `${apiBaseUrl}/products/${product.id}/thumbnail?v=${Date.now()}`;
+  // OLD WORKING METHOD: Use thumbnail_image_url from API (uses asset('storage/...'))
+  if (product.thumbnail_image_url) {
+    return product.thumbnail_image_url;
   }
   
-  // Fallback to old method
+  // Fallback to building URL from path
   if (product.thumbnail_image) {
     return buildAssetUrl(product.thumbnail_image);
   }
@@ -113,51 +99,25 @@ export const getAllProductImages = (product) => {
 
   const images = [];
   
-  // NEW METHOD: Use product ID endpoint for feature images (fetches from DB)
-  if (product.id) {
-    const apiBaseUrl = (() => {
-      const rawApiBaseUrl =
-        import.meta.env.VITE_LARAVEL_API ||
-        import.meta.env.VITE_API_URL ||
-        'http://localhost:8000';
-      const trimmed = rawApiBaseUrl.replace(/\/+$/, '');
-      return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
-    })();
-    
-    // Get feature images count from product
-    const featureImages = normalizeImageArray(product.feature_images);
-    if (featureImages.length > 0) {
-      featureImages.forEach((_, index) => {
-        images.push(`${apiBaseUrl}/products/${product.id}/feature/${index}?v=${Date.now()}`);
-      });
-    }
-    
-    // Add thumbnail as first image
-    const thumbnail = getProductImage(product);
-    if (thumbnail) {
-      images.unshift(thumbnail);
-    }
-    
-    return images.length > 0 ? images : [];
+  // OLD WORKING METHOD: Use feature_images_urls from API (uses asset('storage/...'))
+  if (product.feature_images_urls && Array.isArray(product.feature_images_urls) && product.feature_images_urls.length > 0) {
+    product.feature_images_urls.forEach((url) => {
+      if (url && !images.includes(url)) images.push(url);
+    });
   }
   
-  // Fallback to old method
+  // Fallback to building URLs from paths
   normalizeImageArray(product.feature_images).forEach((url) => {
     if (url && !images.includes(url)) images.push(url);
   });
   
-  normalizeImageArray(product.feature_images_urls).forEach((url) => {
-    if (url && !images.includes(url)) images.push(url);
-  });
-  
-  if (images.length === 0) {
-    const thumbnail = getProductImage(product);
-    if (thumbnail) {
-      images.push(thumbnail);
-    }
+  // Add thumbnail as first image
+  const thumbnail = getProductImage(product);
+  if (thumbnail && !images.includes(thumbnail)) {
+    images.unshift(thumbnail);
   }
   
-  return images;
+  return images.length > 0 ? images : [];
 };
 
 export const formatCurrency = (amount) => {
