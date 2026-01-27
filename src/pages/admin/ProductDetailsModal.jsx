@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Portal from "../../components/Portal";
-import { FaBox, FaChevronLeft, FaChevronRight, FaDownload, FaFileExcel } from "react-icons/fa";
+import { FaBox, FaChevronLeft, FaChevronRight, FaDownload } from "react-icons/fa";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
+import { getFileExtension, getFileIconInfo } from "../../utils/fileIconUtils";
 
 const ProductDetailsModal = ({ 
   product, 
@@ -61,7 +62,8 @@ const ProductDetailsModal = ({
       // Create a temporary anchor element and trigger download
       const a = document.createElement('a');
       a.href = url;
-      a.download = product.file_name || `product-${product.id}.xlsx`;
+      const ext = getFileExtension(product.file_name) || getFileExtension(product.file_path);
+      a.download = product.file_name || `product-${product.id}${ext ? `.${ext}` : ''}`;
       document.body.appendChild(a);
       a.click();
       
@@ -111,6 +113,8 @@ const ProductDetailsModal = ({
   const featureIdx = getFeatureIndex(product.id, gallery.length);
   const heroImage = gallery.length > 0 ? gallery[featureIdx] : getThumbnailOnly(product) || getPrimaryImage(product);
   const featureImages = normalizeFeatureImages(product);
+  const fileIcon = getFileIconInfo({ fileName: product.file_name, filePath: product.file_path });
+  const FileIcon = fileIcon.Icon;
 
   return (
     <Portal>
@@ -442,14 +446,14 @@ const ProductDetailsModal = ({
                     <div className="card border-0 bg-white">
                       <div className="card-header bg-transparent border-bottom-0">
                         <h6 className="mb-0 fw-semibold text-dark">
-                          <i className="fas fa-file-excel me-2 text-success"></i>Product File
+                          <i className={`fas ${fileIcon.faIcon} me-2 ${fileIcon.colorClass}`}></i>Product File
                         </h6>
                       </div>
                       <div className="card-body">
                         <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
                           <div className="flex-grow-1">
                             <div className="d-flex align-items-center gap-2 mb-2">
-                              <FaFileExcel className="text-success" size={24} />
+                              <FileIcon className={fileIcon.colorClass} size={24} />
                               <div>
                                 <label className="form-label small fw-semibold text-muted mb-0">File Name</label>
                                 <p className="mb-0 fw-semibold text-dark">{product.file_name || 'N/A'}</p>

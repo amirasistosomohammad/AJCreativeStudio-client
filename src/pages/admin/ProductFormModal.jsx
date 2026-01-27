@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { showAlert } from '../../services/notificationService';
 import RichTextEditor from '../../components/RichTextEditor';
 import { buildAssetUrl as buildApiAssetUrl } from '../../utils/productImageUtils';
+import { getFileIconInfo } from '../../utils/fileIconUtils';
 
 const ProductFormModal = ({ product, onClose, onSave, token }) => {
   const { user } = useAuth();
@@ -47,6 +48,10 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
   const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const buildAssetUrl = (rawPath) => buildApiAssetUrl(rawPath);
+  const productFileIcon = getFileIconInfo({
+    fileName: selectedFile?.name || filePreview?.name || product?.file_name,
+    filePath: filePreview?.path || product?.file_path,
+  });
 
   const normalizeFeatureImages = (raw) => {
     if (!raw) return [];
@@ -1533,7 +1538,8 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                 {/* File Upload Section */}
                 <div className="mb-4">
                   <h6 className="fw-bold text-dark mb-3" style={{ fontSize: '0.95rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
-                    <i className="fas fa-file-excel me-2"></i>Product File (Excel or PDF)
+                    <i className={`fas ${productFileIcon.faIcon} me-2 ${productFileIcon.colorClass}`}></i>
+                    Product File (Excel or PDF)
                   </h6>
                   <div className="row g-3">
                     <div className="col-md-12">
@@ -1560,7 +1566,10 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                         <div className="mt-3 p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
                           <div className="d-flex align-items-center justify-content-between">
                             <div className="d-flex align-items-center">
-                              <i className={`fas ${(filePreview?.name || selectedFile?.name)?.toLowerCase().endsWith('.pdf') ? 'fa-file-pdf text-danger' : 'fa-file-excel text-success'} me-2`} style={{ fontSize: '1.5rem' }}></i>
+                              <i
+                                className={`fas ${productFileIcon.faIcon} ${productFileIcon.colorClass} me-2`}
+                                style={{ fontSize: '1.5rem' }}
+                              ></i>
                               <div>
                                 <div className="fw-semibold">{filePreview?.name || selectedFile?.name}</div>
                                 <small className="text-muted">
