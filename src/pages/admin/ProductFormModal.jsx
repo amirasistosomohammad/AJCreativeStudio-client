@@ -61,12 +61,24 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
         arr = raw.split(',').map((s) => s.trim()).filter(Boolean);
       }
     }
-    return arr
+    // Normalize and deduplicate
+    const normalized = arr
       .map((img) => {
         if (img && typeof img === 'object' && img.path) return buildAssetUrl(img.path) || img.path;
         return buildAssetUrl(img) || img;
       })
       .filter(Boolean);
+    
+    // Remove duplicates by comparing base paths (without query params)
+    const seen = new Set();
+    return normalized.filter((url) => {
+      const basePath = url.split('?')[0];
+      if (seen.has(basePath)) {
+        return false;
+      }
+      seen.add(basePath);
+      return true;
+    });
   };
 
   // Fetch categories from API when modal opens
@@ -205,6 +217,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
       }
       
       // Now normalize for display
+      // Normalize and deduplicate feature images
       const normalizedFeatures = normalizeFeatureImages(product.feature_images);
       setOriginalFeatureImageCount(rawFeatureImages.length);
       
@@ -213,9 +226,21 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
       console.log('  Normalized features:', normalizedFeatures);
       
       if (normalizedFeatures.length > 0) {
-        // Map each normalized feature to its original index in the raw array
-        // We need to match by comparing the image paths
-        setFeatureImagePreviews(normalizedFeatures.map((normalizedImg, normalizedIdx) => {
+        // Remove duplicates by URL/path
+        const uniqueFeatures = [];
+        const seenPaths = new Set();
+        
+        normalizedFeatures.forEach((normalizedImg) => {
+          // Extract the base path/URL to check for duplicates
+          const basePath = normalizedImg.split('?')[0]; // Remove query params
+          if (!seenPaths.has(basePath)) {
+            seenPaths.add(basePath);
+            uniqueFeatures.push(normalizedImg);
+          }
+        });
+        
+        // Map each unique normalized feature to its original index in the raw array
+        setFeatureImagePreviews(uniqueFeatures.map((normalizedImg, normalizedIdx) => {
           // Try to find the original index by matching paths
           let originalIdx = normalizedIdx;
           for (let i = 0; i < rawFeatureImages.length; i++) {
@@ -225,13 +250,14 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
             if (rawPath && normalizedImg) {
               const rawFileName = rawPath.split('/').pop();
               const normalizedFileName = normalizedImg.split('/').pop();
-              if (rawFileName === normalizedFileName || normalizedImg.includes(rawPath) || rawPath.includes(normalizedImg.split('/').pop())) {
+              const normalizedBasePath = normalizedImg.split('?')[0];
+              if (rawFileName === normalizedFileName || normalizedBasePath.includes(rawPath) || rawPath.includes(normalizedFileName)) {
                 originalIdx = i;
                 break;
               }
             }
           }
-          return { path: normalizedImg, originalIndex: originalIdx };
+          return { path: normalizedImg, url: normalizedImg, originalIndex: originalIdx };
         }));
       } else {
         setFeatureImagePreviews([]);
@@ -1449,7 +1475,7 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                         <div className="mt-3">
                           <div className="row g-2">
                             {featureImagePreviews.map((preview, index) => (
-                              <div key={index} className="col-md-3 col-sm-4 col-6">
+                              <div key={`preview-${index}-${preview.path || preview.url || index}`} className="col-md-3 col-sm-4 col-6">
                                 <div className="position-relative border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
                                   <img
                                     src={preview.url || preview.path}
@@ -1459,6 +1485,21 @@ const ProductFormModal = ({ product, onClose, onSave, token }) => {
                                       height: '120px',
                                       objectFit: 'cover',
                                       borderRadius: '4px',
+                                    }}
+                                    onError={(e) => {
+                                      console.error('Failed to load feature image:', preview.url || preview.path);
+                                      e.target.style.display = 'none';
+                                      // Optionally show a placeholder
+                                      const parent = e.target.parentElement;
+                                      if (parent) {
+                                        const placeholder = document.createElement('div');
+                                        placeholder.className = 'd-flex align-items-center justify-content-center';
+                                        placeholder.style.width = '100%';
+                                        placeholder.style.height = '120px';
+                                        placeholder.style.backgroundColor = '#e9ecef';
+                                        placeholder.innerHTML = '<i class="fas fa-image text-muted"></i>';
+                                        parent.appendChild(placeholder);
+                                      }
                                     }}
                                   />
                                   <button
