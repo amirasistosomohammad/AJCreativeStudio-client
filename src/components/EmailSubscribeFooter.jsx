@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import gcashLogo from '../assets/images/gcash-logo.jpg';
 import mayaLogo from '../assets/images/maya-logo.png';
@@ -193,6 +193,8 @@ const EmailSubscribeFooter = () => {
           {footerLinks.map((link) => {
             const isContact = link === 'Contact';
             const isActiveContact = isContact && location.pathname === '/contact';
+            const isBrowseTemplates = link === 'Browse Templates';
+            const isActiveBrowseTemplates = isBrowseTemplates && location.pathname === '/all-products';
 
             const baseStyle = {
               background: 'none',
@@ -200,14 +202,14 @@ const EmailSubscribeFooter = () => {
               padding: 0,
               margin: 0,
               cursor: 'pointer',
-              color: isActiveContact ? '#000000' : '#444',
+              color: isActiveContact || isActiveBrowseTemplates ? '#000000' : '#444',
               fontSize: '0.95rem',
               // remove default anchor underline
               textDecoration: 'none',
               // small spacing before the underline
               paddingBottom: '2px',
               // use border-bottom as underline so we can control thickness
-              borderBottom: isActiveContact ? '2px solid #000000' : '2px solid transparent',
+              borderBottom: isActiveContact || isActiveBrowseTemplates ? '2px solid #000000' : '2px solid transparent',
               transition: 'color 0.18s ease, border-color 0.18s ease',
             };
 
@@ -217,21 +219,35 @@ const EmailSubscribeFooter = () => {
                 e.currentTarget.style.borderBottomColor = '#000000';
               },
               onMouseLeave: (e) => {
-                e.currentTarget.style.color = isActiveContact ? '#000000' : '#444';
-                e.currentTarget.style.borderBottomColor = isActiveContact ? '#000000' : 'transparent';
+                const isActive = isActiveContact || isActiveBrowseTemplates;
+                e.currentTarget.style.color = isActive ? '#000000' : '#444';
+                e.currentTarget.style.borderBottomColor = isActive ? '#000000' : 'transparent';
               },
             };
 
-            if (isContact) {
+            if (isBrowseTemplates) {
               return (
-                <Link
+                <a
                   key={link}
-                  to="/contact"
+                  href="/all-products"
                   style={baseStyle}
                   {...commonHoverHandlers}
                 >
                   {link}
-                </Link>
+                </a>
+              );
+            }
+
+            if (isContact) {
+              return (
+                <a
+                  key={link}
+                  href="/contact"
+                  style={baseStyle}
+                  {...commonHoverHandlers}
+                >
+                  {link}
+                </a>
               );
             }
 

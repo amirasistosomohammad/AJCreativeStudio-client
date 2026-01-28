@@ -329,7 +329,9 @@ const EmailSubscribeSection = ({ config, section }) => {
         >
           {footerLinks.map((link) => {
             const isContact = link === 'Contact';
+            const isBrowseTemplates = link === 'Browse Templates';
             const isActiveContact = isContact && location.pathname === '/contact';
+            const isActiveBrowseTemplates = isBrowseTemplates && location.pathname === '/all-products';
 
             const baseStyle = {
               background: 'none',
@@ -337,11 +339,11 @@ const EmailSubscribeSection = ({ config, section }) => {
               padding: 0,
               margin: 0,
               cursor: 'pointer',
-              color: isActiveContact ? '#000000' : '#444',
+              color: isActiveContact || isActiveBrowseTemplates ? '#000000' : '#444',
               fontSize: '0.95rem',
               textDecoration: 'none',
               paddingBottom: '2px',
-              borderBottom: isActiveContact ? '2px solid #000000' : '2px solid transparent',
+              borderBottom: isActiveContact || isActiveBrowseTemplates ? '2px solid #000000' : '2px solid transparent',
               transition: 'color 0.18s ease, border-color 0.18s ease',
             };
 
@@ -351,8 +353,9 @@ const EmailSubscribeSection = ({ config, section }) => {
                 e.currentTarget.style.borderBottomColor = '#000000';
               },
               onMouseLeave: (e) => {
-                e.currentTarget.style.color = isActiveContact ? '#000000' : '#444';
-                e.currentTarget.style.borderBottomColor = isActiveContact ? '#000000' : 'transparent';
+                const isActive = isActiveContact || isActiveBrowseTemplates;
+                e.currentTarget.style.color = isActive ? '#000000' : '#444';
+                e.currentTarget.style.borderBottomColor = isActive ? '#000000' : 'transparent';
               },
             };
 
@@ -361,6 +364,19 @@ const EmailSubscribeSection = ({ config, section }) => {
                 <Link
                   key={link}
                   to="/contact"
+                  style={baseStyle}
+                  {...commonHoverHandlers}
+                >
+                  {link}
+                </Link>
+              );
+            }
+
+            if (isBrowseTemplates) {
+              return (
+                <Link
+                  key={link}
+                  to="/all-products"
                   style={baseStyle}
                   {...commonHoverHandlers}
                 >

@@ -301,7 +301,8 @@ const DynamicProductSection = ({ section }) => {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: 'contain',
+                objectFit: 'cover',
+                objectPosition: 'center',
                 display: 'block',
                 opacity: imageLoading[product.id] ? 0 : 1,
                 transition: 'opacity 0.3s ease-in-out',
