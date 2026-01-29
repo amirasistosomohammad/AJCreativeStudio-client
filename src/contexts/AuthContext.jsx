@@ -131,11 +131,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logoutAdmin = async () => {
     try {
       const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
       
-      // Handle admin logout
       const adminToken = localStorage.getItem('token') || localStorage.getItem('admin_token');
       if (adminToken) {
         await fetch(`${apiBaseUrl}/admin/logout`, {
@@ -146,8 +145,21 @@ export const AuthProvider = ({ children }) => {
           },
         });
       }
-      
-      // Handle customer logout - call backend to revoke token
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Remove admin tokens only
+      localStorage.removeItem('token');
+      localStorage.removeItem('admin_token');
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const logoutCustomer = async () => {
+    try {
+      const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
       const customerToken = localStorage.getItem('customer_token');
       if (customerToken) {
         await fetch(`${apiBaseUrl}/auth/logout`, {
@@ -159,15 +171,11 @@ export const AuthProvider = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Customer logout error:', error);
     } finally {
-      // Always remove tokens from localStorage and clear state
-      localStorage.removeItem('token');
-      localStorage.removeItem('admin_token');
+      // Remove customer token only
       localStorage.removeItem('customer_token');
-      setUser(null);
       setCustomer(null);
-      setIsAuthenticated(false);
       setIsCustomerAuthenticated(false);
     }
   };
@@ -190,7 +198,9 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated, // Admin authentication state (used for admin routes)
         isCustomerAuthenticated, // Specific customer auth state
         login,
-        logout,
+        logout: logoutAdmin, // Backward compatible: "logout" is admin logout
+        logoutAdmin,
+        logoutCustomer,
         checkAuth,
       }}
     >

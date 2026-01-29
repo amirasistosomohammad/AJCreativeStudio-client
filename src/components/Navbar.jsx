@@ -18,7 +18,7 @@ const Navbar = () => {
   const location = useLocation();
   const navRef = useRef(null);
   const { setCartOpen, getCartItemCount } = useCart();
-  const { isCustomerAuthenticated, customer, logout, checkAuth } = useAuth();
+  const { isCustomerAuthenticated, customer, logoutCustomer, checkAuth, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,6 +48,13 @@ const Navbar = () => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showUserDropdown]);
+
+  // If the customer becomes authenticated, ensure the login modal is closed.
+  useEffect(() => {
+    if (isCustomerAuthenticated) {
+      setShowLoginModal(false);
+    }
+  }, [isCustomerAuthenticated]);
 
   useEffect(() => {
     // Close the mobile menu on route change
@@ -416,10 +423,13 @@ const Navbar = () => {
               style={{ color: '#000', textDecoration: 'none' }}
               aria-label="User Account"
                 aria-expanded={showUserDropdown}
+              disabled={authLoading}
+              aria-disabled={authLoading}
               whileHover={{ opacity: 0.7 }}
               whileTap={{ opacity: 0.5 }}
               transition={{ duration: 0.2 }}
                 onClick={() => {
+                  if (authLoading) return;
                   if (isCustomerAuthenticated) {
                     setShowUserDropdown(!showUserDropdown);
                 } else {
@@ -438,11 +448,31 @@ const Navbar = () => {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ transition: 'all 0.2s ease' }}
+                style={{
+                  transition: 'all 0.2s ease',
+                  opacity: authLoading ? 0.45 : 1,
+                }}
               >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
+              {authLoading && (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    width: '14px',
+                    height: '14px',
+                    marginTop: '-7px',
+                    marginLeft: '-7px',
+                    color: '#111',
+                  }}
+                />
+              )}
             </motion.button>
             </div>
 
@@ -519,7 +549,9 @@ const Navbar = () => {
                           }
                         );
                         if (result.isConfirmed) {
-                          await logout();
+                          showAlert.loading('Logging out…');
+                          await logoutCustomer();
+                          showAlert.close();
                           showAlert.success('Logged Out', 'You have been logged out successfully.', {
                             width: 340,
                             padding: '0.9rem 1rem',
