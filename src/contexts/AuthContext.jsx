@@ -26,8 +26,11 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       const apiBaseUrl = import.meta.env.VITE_LARAVEL_API || import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      
-      // Check for admin token first
+
+      let adminAuthenticated = false;
+      let customerAuthenticated = false;
+
+      // Check admin token
       const adminToken = localStorage.getItem('token') || localStorage.getItem('admin_token');
       if (adminToken) {
         const response = await fetch(`${apiBaseUrl}/admin/me`, {
@@ -42,11 +45,7 @@ export const AuthProvider = ({ children }) => {
           const data = await response.json();
           console.log('AuthContext - /admin/me response:', JSON.stringify(data, null, 2));
           setUser(data.user);
-          setIsAuthenticated(true);
-          setIsCustomerAuthenticated(false);
-          setCustomer(null);
-          setLoading(false);
-          return;
+          adminAuthenticated = true;
         } else if (response.status === 401 || response.status === 403) {
           // Token invalid/expired – clear it
           localStorage.removeItem('token');
@@ -69,22 +68,23 @@ export const AuthProvider = ({ children }) => {
           const data = await response.json();
           console.log('AuthContext - /auth/me response:', JSON.stringify(data, null, 2));
           setCustomer(data.customer);
-          setIsCustomerAuthenticated(true);
-          setIsAuthenticated(false);
-          setUser(null);
-          setLoading(false);
-          return;
+          customerAuthenticated = true;
         } else if (response.status === 401 || response.status === 403) {
           // Token invalid/expired – clear it
           localStorage.removeItem('customer_token');
         }
       }
 
-      // No valid tokens found
-      setUser(null);
-      setCustomer(null);
-      setIsAuthenticated(false);
-      setIsCustomerAuthenticated(false);
+      // Apply auth state (admin + customer are independent)
+      setIsAuthenticated(adminAuthenticated);
+      setIsCustomerAuthenticated(customerAuthenticated);
+
+      if (!adminAuthenticated) {
+        setUser(null);
+      }
+      if (!customerAuthenticated) {
+        setCustomer(null);
+      }
     } catch (error) {
       console.error('Auth check error:', error);
       // Keep tokens so we can retry if this was just a transient error
@@ -178,10 +178,6 @@ export const AuthProvider = ({ children }) => {
   const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
   const customerToken = localStorage.getItem('customer_token');
 
-  // For backward compatibility, also expose as 'admin'
-  // isAuthenticated now represents either admin OR customer authentication
-  const combinedIsAuthenticated = isAuthenticated || isCustomerAuthenticated;
-
   return (
     <AuthContext.Provider
       value={{
@@ -191,7 +187,7 @@ export const AuthProvider = ({ children }) => {
         token, // Admin token for API calls
         customerToken, // Customer token for API calls
         loading,
-        isAuthenticated: combinedIsAuthenticated, // Combined auth state for backward compatibility
+        isAuthenticated, // Admin authentication state (used for admin routes)
         isCustomerAuthenticated, // Specific customer auth state
         login,
         logout,
